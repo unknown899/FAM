@@ -1,0 +1,40 @@
+Host Name: kaiwi-ROG-Zephyrus-G15-GA503QC-GA503QC
+=== If no file names and line numbers are shown below, one can run
+            addr2line -Cpfie my_exefile my_line_address
+    to convert `my_line_address` (e.g., 0x4a6b) into file name and line number.
+    Or one can use amrex/Tools/Backtrace/parse_bt.py.
+
+=== Please note that the line number reported by addr2line may not be accurate.
+    One can use
+            readelf -wl my_exefile | grep my_line_address'
+    to find out the offset for that line.
+
+ 0: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x38fe45) [0x5ab78ed4ae45]
+    amrex::BLBackTrace::print_backtrace_info(_IO_FILE*) at /usr/include/x86_64-linux-gnu/bits/unistd.h:284
+ (inlined by) amrex::BLBackTrace::print_backtrace_info(_IO_FILE*) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX_BLBackTrace.cpp:215
+
+ 1: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x39343c) [0x5ab78ed4e43c]
+    amrex::BLBackTrace::handler(int) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX_BLBackTrace.cpp:103
+
+ 2: /lib/x86_64-linux-gnu/libc.so.6(+0x42520) [0x761b44a42520]
+
+ 3: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x982c8) [0x5ab78ea532c8]
+    FerroX_Util::Contains_sc(amrex::MultiFab&, bool&) at /home/kaiwi/FAM/FerroX/Exec/../Source/Utils/FerroXUtils/FerroXUtil.cpp:28
+
+ 4: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x5cba9) [0x5ab78ea17ba9]
+    main_main(c_FerroX&) at /home/kaiwi/FAM/FerroX/Exec/../Source/main.cpp:186
+
+ 5: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x49eee) [0x5ab78ea04eee]
+    main at /home/kaiwi/FAM/FerroX/Exec/../Source/main.cpp:43
+
+ 6: /lib/x86_64-linux-gnu/libc.so.6(+0x29d90) [0x761b44a29d90]
+
+ 7: /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x80) [0x761b44a29e40]
+
+ 8: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x508b5) [0x5ab78ea0b8b5]
+    ?? ??:0
+
+
+===== TinyProfilers ======
+main()
+

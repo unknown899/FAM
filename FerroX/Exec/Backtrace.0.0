@@ -1,0 +1,59 @@
+Host Name: kaiwi-ROG-Zephyrus-G15-GA503QC-GA503QC
+=== If no file names and line numbers are shown below, one can run
+            addr2line -Cpfie my_exefile my_line_address
+    to convert `my_line_address` (e.g., 0x4a6b) into file name and line number.
+    Or one can use amrex/Tools/Backtrace/parse_bt.py.
+
+=== Please note that the line number reported by addr2line may not be accurate.
+    One can use
+            readelf -wl my_exefile | grep my_line_address'
+    to find out the offset for that line.
+
+ 0: ./main3d.gnu.TPROF.MPI.OMP.ex(+0x2ce9f5) [0x58fa0f1ec9f5]
+    amrex::BLBackTrace::print_backtrace_info(_IO_FILE*) at /usr/include/x86_64-linux-gnu/bits/unistd.h:284
+ (inlined by) amrex::BLBackTrace::print_backtrace_info(_IO_FILE*) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX_BLBackTrace.cpp:215
+
+ 1: ./main3d.gnu.TPROF.MPI.OMP.ex(+0x2d200f) [0x58fa0f1f000f]
+    amrex::BLBackTrace::handler(int) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX_BLBackTrace.cpp:103
+
+ 2: ./main3d.gnu.TPROF.MPI.OMP.ex(+0xf4f7b) [0x58fa0f012f7b]
+    amrex::Error_host(char const*, char const*) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX.cpp:272
+
+ 3: ./main3d.gnu.TPROF.MPI.OMP.ex(+0x14110d) [0x58fa0f05f10d]
+    std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_data() const at /usr/include/c++/11/bits/basic_string.h:195
+ (inlined by) std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_is_local() const at /usr/include/c++/11/bits/basic_string.h:230
+ (inlined by) std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_dispose() at /usr/include/c++/11/bits/basic_string.h:239
+ (inlined by) std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::~basic_string() at /usr/include/c++/11/bits/basic_string.h:672
+ (inlined by) amrex::FileOpenFailed(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX_Utility.cpp:142
+
+ 4: ./main3d.gnu.TPROF.MPI.OMP.ex(+0x17be48) [0x58fa0f099e48]
+    amrex::ParallelDescriptor::ReadAndBcastFile(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, amrex::Vector<char, std::allocator<char> >&, bool, ompi_communicator_t* const&) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX_ParallelDescriptor.cpp:1518
+
+ 5: ./main3d.gnu.TPROF.MPI.OMP.ex(+0x11fd52) [0x58fa0f03dd52]
+    amrex::(anonymous namespace)::read_file(char const*, std::unordered_map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, amrex::ParmParse::PP_entry, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, amrex::ParmParse::PP_entry> > >&) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX_ParmParse.cpp:645 (discriminator 2)
+
+ 6: ./main3d.gnu.TPROF.MPI.OMP.ex(+0x123123) [0x58fa0f041123]
+    std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_data() const at /usr/include/c++/11/bits/basic_string.h:195
+ (inlined by) std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_set_length(unsigned long) at /usr/include/c++/11/bits/basic_string.h:225
+ (inlined by) std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::clear() at /usr/include/c++/11/bits/basic_string.h:1016
+ (inlined by) ppinit at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX_ParmParse.cpp:1439
+ (inlined by) amrex::ParmParse::Initialize(int, char**, char const*) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX_ParmParse.cpp:1662
+
+ 7: ./main3d.gnu.TPROF.MPI.OMP.ex(+0xf4514) [0x58fa0f012514]
+    amrex::Initialize(int&, char**&, bool, ompi_communicator_t*, std::function<void ()> const&, std::ostream&, std::ostream&, void (*)(char const*), int) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX.cpp:491
+
+ 8: ./main3d.gnu.TPROF.MPI.OMP.ex(+0x37a12) [0x58fa0ef55a12]
+    std::_Function_base::~_Function_base() at /usr/include/c++/11/bits/std_function.h:243
+ (inlined by) std::function<void ()>::~function() at /usr/include/c++/11/bits/std_function.h:334
+ (inlined by) main at /home/kaiwi/FAM/FerroX/Exec/../Source/main.cpp:37
+
+ 9: /lib/x86_64-linux-gnu/libc.so.6(+0x29d90) [0x7d1dc5829d90]
+
+10: /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x80) [0x7d1dc5829e40]
+
+11: ./main3d.gnu.TPROF.MPI.OMP.ex(+0x3cb25) [0x58fa0ef5ab25]
+    ?? ??:0
+
+
+===== TinyProfilers ======
+

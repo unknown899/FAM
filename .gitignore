@@ -1,1 +1,34 @@
 amrex/
+*.ex
+*.o
+*.mod
+*.a
+*.so
+FerroX/Exec/*.ex
+# Build outputs
+*.ex
+*.o
+*.mod
+*.a
+*.so
+*.exe
+
+# AMReX / FerroX outputs
+plt*/
+chk*/
+Backtrace.*
+*.h5
+*.dat
+*.log
+*.ex
+*.o
+*.mod
+*.a
+*.so
+*.exe
+plt*/
+chk*/
+Backtrace.*
+*.h5
+*.dat
+*.log
