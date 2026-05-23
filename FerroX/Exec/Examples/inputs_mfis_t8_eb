@@ -80,7 +80,7 @@ FE_hi =  16.e-9  16.e-9 29.5e-9
 #################################
 ###### MATERIAL PROPERTIES ######
 #################################
-
+metal_work_function = 4.6
 acceptor_doping = 5.0e19
 donor_doping = 0.0
 epsilon_0 = 8.85e-12
