@@ -50,9 +50,9 @@ domain.embedded_boundary = 0
 voltage_sweep = 1
 Phi_Bc_lo = 0.0
 Phi_Bc_hi = -5.0
-Phi_Bc_inc = 0.5
+Phi_Bc_inc = 1
 Phi_Bc_hi_max = 5.0
-num_Vapp_max = 40
+num_Vapp_max = 20
 inc_step = -1
 phi_tolerance = 1.e-7
 
