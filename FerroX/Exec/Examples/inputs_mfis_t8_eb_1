@@ -1,0 +1,102 @@
+#################################
+###### PROBLEM DOMAIN ######
+#################################
+
+domain.prob_lo = -16.e-9 -16.e-9 0.e-9
+domain.prob_hi =  16.e-9  16.e-9 29.5e-9
+
+domain.n_cell = 64 64 59
+domain.max_grid_size = 16 16 59
+domain.blocking_factor = 16 16 1
+domain.coord_sys = cartesian
+
+prob_type = 1
+
+TimeIntegratorOrder = 1
+
+nsteps = 40000
+plot_int = 100000
+
+dt = 2.0e-13
+
+use_work_function = 1 
+############################################
+###### POLARIZATION BOUNDARY CONDITIONS ####
+############################################
+
+P_BC_flag_lo = 2 2 0
+P_BC_flag_hi = 2 2 1
+lambda = 3.0e-9
+
+############################################
+###### ELECTRICAL BOUNDARY CONDITIONS ######
+############################################
+
+domain.is_periodic = 0 0 0
+
+boundary.hi = neu neu dir(0.0)
+boundary.lo = neu neu dir(0.0)
+
+####################################
+###### EMBEDDED BOUNDARIES ######
+####################################
+
+domain.embedded_boundary = 0
+
+####################################
+###### Voltage Sweep ######
+####################################
+
+voltage_sweep = 1
+Phi_Bc_lo = 0.0
+Phi_Bc_hi = -5.0
+Phi_Bc_inc = 1
+Phi_Bc_hi_max = 5.0
+num_Vapp_max = 21
+inc_step = -1
+phi_tolerance = 1.e-7
+
+#################################
+###### STACK GEOMETRY ###########
+#################################
+
+SC_lo = -16.e-9 -16.e-9 0.e-9
+SC_hi =  16.e-9  16.e-9 20.e-9
+
+DE_lo = -16.e-9 -16.e-9 20.e-9
+DE_hi =  16.e-9  16.e-9 21.5e-9
+
+FE_lo = -16.e-9 -16.e-9 21.5e-9
+FE_hi =  16.e-9  16.e-9 29.5e-9
+
+#FE:0.0, DE:1.0, Source/Drain:2.0, Channel:3.0
+#my_constants.tiny = 1.e-16
+#device_geom.device_geom_function(x,y,z) = "-1.*(x > -12.e-9 - tiny)*(x < 12.e-9 + tiny) * (y > -16.e-9 - tiny)*(y < 16.e-9 + tiny) * (z > 10.e-9 - tiny)*(z < 15.e-9 + tiny) 
+#                                        + 1.*(x > -16.e-9 - tiny)*(x < 16.e-9 + tiny) * (y > -16.e-9 - tiny)*(y < 16.e-9 + tiny) * (z > 9.e-9 - tiny)*(z < 16.e-9 + tiny)
+#                                         + 2.*(x > -16.e-9 - tiny)*(x < 16.e-9 + tiny) * (y > -16.e-9 - tiny)*(y < 16.e-9 + tiny) * (z > 0.e-9 - tiny)*(z < 9.e-9 + tiny)
+#                                         + 1.*(x > -12.e-9 - tiny)*(x < 12.e-9 + tiny) * (y > -16.e-9 - tiny)*(y < 16.e-9 + tiny) * (z > 0.e-9 - tiny)*(z < 9.e-9 + tiny)"
+
+
+#################################
+###### MATERIAL PROPERTIES ######
+#################################
+metal_work_function = 4.6
+acceptor_doping = 5.0e19
+donor_doping = 0.0
+epsilon_0 = 8.85e-12
+epsilonX_fe = 24.0
+epsilonZ_fe = 24.0
+epsilon_de = 3.9
+epsilon_si = 11.7
+alpha = -2.75e7
+beta = 7.1e6
+gamma = 1.5e5
+BigGamma = 100
+g11 = 1.0e-9
+g44 = 1.0e-9
+g44_p = 0.0
+g12 = 0.0
+alpha_12 = 0.0
+alpha_112 = 0.0
+alpha_123 = 0.0
+

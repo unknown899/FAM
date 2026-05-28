@@ -10,7 +10,7 @@ using namespace amrex;
 
 
 void FerroX_Util::Contains_sc(MultiFab& MaterialMask, bool& contains_SC)
-{    
+{       /*
 	amrex::Print() << "ENTER Contains_sc\n";
 
 	amrex::Print() << "ok = "
@@ -21,5 +21,6 @@ void FerroX_Util::Contains_sc(MultiFab& MaterialMask, bool& contains_SC)
 
 	amrex::Print() << "nBox = "
 		   << MaterialMask.boxArray().size() << "\n";
+	*/
 	contains_SC = (MaterialMask.max(0) >= 2.0);
 }
