@@ -9,32 +9,33 @@ Host Name: kaiwi-ROG-Zephyrus-G15-GA503QC-GA503QC
             readelf -wl my_exefile | grep my_line_address'
     to find out the offset for that line.
 
- 0: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x38fe45) [0x5ab78ed4ae45]
+ 0: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x38eb85) [0x5da10c866b85]
     amrex::BLBackTrace::print_backtrace_info(_IO_FILE*) at /usr/include/x86_64-linux-gnu/bits/unistd.h:284
  (inlined by) amrex::BLBackTrace::print_backtrace_info(_IO_FILE*) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX_BLBackTrace.cpp:215
 
- 1: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x39343c) [0x5ab78ed4e43c]
+ 1: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x39217c) [0x5da10c86a17c]
     amrex::BLBackTrace::handler(int) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX_BLBackTrace.cpp:103
 
- 2: /lib/x86_64-linux-gnu/libc.so.6(+0x42520) [0x761b44a42520]
+ 2: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x2120d2) [0x5da10c6ea0d2]
+    amrex::Gpu::Device::Initialize(bool, int) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX_GpuDevice.cpp:331
 
- 3: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x982c8) [0x5ab78ea532c8]
-    FerroX_Util::Contains_sc(amrex::MultiFab&, bool&) at /home/kaiwi/FAM/FerroX/Exec/../Source/Utils/FerroXUtils/FerroXUtil.cpp:28
+ 3: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x10fcd0) [0x5da10c5e7cd0]
+    std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_Alloc_hider::_Alloc_hider(char*, std::allocator<char>&&) at /usr/include/c++/11/bits/basic_string.h:167
+ (inlined by) std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string() at /usr/include/c++/11/bits/basic_string.h:439
+ (inlined by) amrex::Initialize(int&, char**&, bool, ompi_communicator_t*, std::function<void ()> const&, std::ostream&, std::ostream&, void (*)(char const*), int) at /home/kaiwi/FAM/FerroX/Exec/../../amrex/Src/Base/AMReX.cpp:569
 
- 4: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x5cba9) [0x5ab78ea17ba9]
-    main_main(c_FerroX&) at /home/kaiwi/FAM/FerroX/Exec/../Source/main.cpp:186
+ 4: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x49eb2) [0x5da10c521eb2]
+    std::_Function_base::~_Function_base() at /usr/include/c++/11/bits/std_function.h:243
+ (inlined by) std::function<void ()>::~function() at /usr/include/c++/11/bits/std_function.h:334
+ (inlined by) main at /home/kaiwi/FAM/FerroX/Exec/../Source/main.cpp:37
 
- 5: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x49eee) [0x5ab78ea04eee]
-    main at /home/kaiwi/FAM/FerroX/Exec/../Source/main.cpp:43
+ 5: /lib/x86_64-linux-gnu/libc.so.6(+0x29d90) [0x714854229d90]
 
- 6: /lib/x86_64-linux-gnu/libc.so.6(+0x29d90) [0x761b44a29d90]
+ 6: /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x80) [0x714854229e40]
 
- 7: /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x80) [0x761b44a29e40]
-
- 8: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x508b5) [0x5ab78ea0b8b5]
+ 7: ./main3d.gnu.TPROF.MPI.CUDA.ex(+0x508b5) [0x5da10c5288b5]
     ?? ??:0
 
 
 ===== TinyProfilers ======
-main()
 
