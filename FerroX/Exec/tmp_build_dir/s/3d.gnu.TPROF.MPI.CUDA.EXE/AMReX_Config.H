@@ -1,5 +1,11 @@
 #ifndef AMREX_HAVE_NO_CONFIG_H
 #define AMREX_HAVE_NO_CONFIG_H
+#ifndef NDEBUG
+#define NDEBUG 1
+#endif
+#ifndef _FORTIFY_SOURCE
+#define _FORTIFY_SOURCE 2 -O2 -isystem /home/gkaiwi58/.conda/envs/ferrocuda/include
+#endif
 #ifndef AMREX_TINY_PROFILING
 #define AMREX_TINY_PROFILING 1
 #endif
