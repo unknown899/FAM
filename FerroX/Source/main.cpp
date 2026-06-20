@@ -557,9 +557,13 @@ void main_main (c_FerroX& rFerroX)
 
             Phi_Bc_hi += sign*Phi_Bc_inc;
             num_Vapp += 1;
-            if(std::abs(std::abs(Phi_Bc_hi) - Phi_Bc_hi_max) <= tiny) {
+            if(std::abs(std::abs(Phi_Bc_hi) - Phi_Bc_hi_max) <= tiny) { 
               sign *= -1;
               amrex::Print() << "Direction of voltage sweep is reversed. Phi_Bc_hi = " << Phi_Bc_hi << ", and Phi_Bc_hi_max = " << Phi_Bc_hi_max << std::endl;
+            }
+            if(std::abs(std::abs(Phi_Bc_hi) - Phi_Bc_hi_min) <= tiny) { //self add
+              sign *= -1;
+              amrex::Print() << "Direction of voltage sweep is reversed. Phi_Bc_hi = " << Phi_Bc_hi << ", and Phi_Bc_hi_min = " << Phi_Bc_hi_min << std::endl;
             }
             amrex::Print() << "step = " << step << ", Phi_Bc_hi = " << Phi_Bc_hi << ", num_Vapp = " << num_Vapp << ", sign = " << sign << std::endl;
 
