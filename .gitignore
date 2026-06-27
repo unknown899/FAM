@@ -32,3 +32,7 @@ Backtrace.*
 *.h5
 *.dat
 *.log
+
+# Ignore all build directories named tmp_build_dir
+tmp_build_dir/
+**/tmp_build_dir/
