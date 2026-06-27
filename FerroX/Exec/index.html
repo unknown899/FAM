@@ -1,0 +1,390 @@
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8">
+
+<title>MFIS Dashboard</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    margin:25px;
+}
+
+h1{
+    margin-bottom:10px;
+}
+
+.subtitle{
+    color:#000;
+    font-size:20px;
+    font-weight:bold;
+    margin-top:0px;
+    margin-bottom:10px;
+}
+
+.note{
+    color:#444;
+    font-size:15px;
+    margin-bottom:20px;
+}
+
+input{
+    width:350px;
+    padding:8px;
+    font-size:15px;
+    margin-bottom:15px;
+}
+
+table{
+    border-collapse:collapse;
+    width:100%;
+}
+
+th{
+    position:sticky;
+    top:0;
+    background:#f2f2f2;
+}
+
+th,td{
+    border:1px solid #bbb;
+    padding:8px;
+    text-align:center;
+}
+
+tr:nth-child(even){
+    background:#fafafa;
+}
+
+tr:hover{
+    background:#ffffdd;
+}
+
+img{
+    max-width:180px;
+    max-height:120px;
+    transition:.2s;
+}
+
+img:hover{
+    transform:scale(1.8);
+    z-index:100;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>MFIS Dashboard</h1>
+
+<p class="subtitle">
+<div>
+Last Update :
+<span id="last_update">2026-06-28 02:12:26</span>
+</div>
+
+<div>
+Total Experiments :
+<span id="total_exp">21</span>
+</div>
+</p>
+
+<p class="note">
+* All parameters are in SI units.
+</p>
+
+<input id="search" placeholder="Search...">
+
+<table id="tbl">
+
+<thead>
+
+<tr>
+
+<th>Folder</th>
+<th>alpha</th>
+<th>beta</th>
+<th>gamma</th>
+<th>BigGamma</th>
+<th>g11</th>
+<th>g44</th>
+<th>T_FE</th><th>PV Curve</th><th>Pz Stack</th>
+</tr>
+
+</thead>
+
+<tbody id="exp_table">
+<tr><td>MFIS_t_5_nomi</td><td>-6.250e+09</td><td>1.000e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>5.000e-09</td>
+<td>
+<a href="MFIS_t_5_nomi/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_5_nomi/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_5_nomi/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_5_nomi/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_6_nomi</td><td>-6.250e+09</td><td>1.000e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>6.000e-09</td>
+<td>
+<a href="MFIS_t_6_nomi/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_6_nomi/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_6_nomi/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_6_nomi/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_7_nomi</td><td>-6.250e+09</td><td>1.000e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>7.000e-09</td>
+<td>
+<a href="MFIS_t_7_nomi/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_7_nomi/figs/MFIS_PV_curve.png">
+</a>
+</td>
+<td>No Image</td></tr><tr><td>MFIS_t_8_nomi</td><td>-6.250e+09</td><td>1.000e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi/MFIS_PV_curve.png">
+</a>
+</td>
+<td>No Image</td></tr><tr><td>MFIS_t_8_nomi_1</td><td>-8.000e+09</td><td>1.500e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_1/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_1/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_1/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_1/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_10</td><td>-1.690e+10</td><td>3.300e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_10/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_10/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_10/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_10/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_11</td><td>-1.000e+10</td><td>3.300e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_11/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_11/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_11/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_11/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_12</td><td>-1.690e+10</td><td>5.580e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_12/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_12/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_12/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_12/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_13</td><td>-1.690e+10</td><td>4.290e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_13/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_13/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_13/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_13/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_14</td><td>-1.000e+10</td><td>5.580e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_14/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_14/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_14/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_14/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_15</td><td>-1.000e+10</td><td>7.254e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_15/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_15/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_15/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_15/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_18</td><td>-1.000e+10</td><td>9.425e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_18/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_18/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_18/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_18/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_2</td><td>-1.000e+10</td><td>1.500e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_2/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_2/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_2/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_2/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_3</td><td>-1.300e+10</td><td>1.500e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_3/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_3/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_3/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_3/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_4</td><td>-1.300e+10</td><td>1.800e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_4/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_4/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_4/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_4/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_5</td><td>-1.300e+10</td><td>2.100e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_5/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_5/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_5/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_5/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_6</td><td>-1.300e+10</td><td>3.300e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_6/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_6/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_6/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_6/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_7</td><td>-1.300e+10</td><td>4.290e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_7/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_7/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_7/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_7/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_8</td><td>-1.690e+10</td><td>2.310e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_8/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_8/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_8/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_8/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_9</td><td>-1.000e+10</td><td>4.290e+11</td><td>1.500e+11</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_9/figs/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_9/figs/MFIS_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFIS_t_8_nomi_9/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFIS_t_8_nomi_9/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+</tr><tr><td>MFIS_t_8_nomi_u1.3</td><td>-8.125e+09</td><td>1.300e+11</td><td>1.950e+11</td><td>1.300e+02</td><td>1.300e-09</td><td>1.300e-09</td><td>8.000e-09</td>
+<td>
+<a href="MFIS_t_8_nomi_u1.3/MFIS_PV_curve.png" target="_blank">
+<img src="MFIS_t_8_nomi_u1.3/MFIS_PV_curve.png">
+</a>
+</td>
+<td>No Image</td></tr>
+
+<tbody id="exp_table">
+
+</table>
+
+<script>
+
+const search=document.getElementById("search");
+
+search.onkeyup=function(){
+
+let filter=this.value.toLowerCase();
+
+let rows=document.querySelectorAll("#tbl tbody tr");
+
+rows.forEach(function(r){
+
+let txt=r.innerText.toLowerCase();
+
+r.style.display=txt.includes(filter)?"":"none";
+
+});
+
+};
+
+</script>
+
+</body>
+
+</html>
+
