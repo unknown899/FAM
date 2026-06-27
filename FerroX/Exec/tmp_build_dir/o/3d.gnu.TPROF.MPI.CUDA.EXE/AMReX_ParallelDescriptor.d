@@ -5,6 +5,8 @@ tmp_build_dir/o/3d.gnu.TPROF.MPI.CUDA.EXE/AMReX_ParallelDescriptor.o : ../../amr
     ../../amrex/Src/Base/AMReX_GpuPrint.H \
     ../../amrex/Src/Base/AMReX_GpuAssert.H \
     ../../amrex/Src/Base/AMReX_ccse-mpi.H \
+    /home/bowei/miniconda3/envs/ferrocuda12/include/mpi.h \
+    /home/bowei/miniconda3/envs/ferrocuda12/include/mpi_portable_platform.h \
     ../../amrex/Src/Base/AMReX_Exception.H \
     ../../amrex/Src/Base/AMReX_Extension.H \
     ../../amrex/Src/Base/AMReX_Utility.H \
@@ -54,6 +56,12 @@ tmp_build_dir/o/3d.gnu.TPROF.MPI.CUDA.EXE/AMReX_ParallelDescriptor.o : ../../amr
     ../../amrex/Src/Base/AMReX_ANSIEscCode.H \
     ../../amrex/Src/Base/AMReX_RealVect.H \
     ../../amrex/Src/Base/AMReX_Arena.H \
+    /home/bowei/miniconda3/envs/ferrocuda12/include/mpi-ext.h \
+    /home/bowei/miniconda3/envs/ferrocuda12/include/openmpi/mpiext/mpiext_affinity_c.h \
+    /home/bowei/miniconda3/envs/ferrocuda12/include/openmpi/mpiext/mpiext_cuda_c.h \
+    /home/bowei/miniconda3/envs/ferrocuda12/include/openmpi/mpiext/mpiext_ftmpi_c.h \
+    /home/bowei/miniconda3/envs/ferrocuda12/include/openmpi/mpiext/mpiext_rocm_c.h \
+    /home/bowei/miniconda3/envs/ferrocuda12/include/openmpi/mpiext/mpiext_shortfloat_c.h \
     ../../amrex/Src/Base/AMReX_ParmParse.H \
     ../../amrex/Src/Base/AMReX_Enum.H \
     ../../amrex/Src/Base/Parser/AMReX_IParser.H \
@@ -78,6 +86,10 @@ tmp_build_dir/s/3d.gnu.TPROF.MPI.CUDA.EXE/AMReX_Config.H:
 ../../amrex/Src/Base/AMReX_GpuAssert.H:
 
 ../../amrex/Src/Base/AMReX_ccse-mpi.H:
+
+/home/bowei/miniconda3/envs/ferrocuda12/include/mpi.h:
+
+/home/bowei/miniconda3/envs/ferrocuda12/include/mpi_portable_platform.h:
 
 ../../amrex/Src/Base/AMReX_Exception.H:
 
@@ -176,6 +188,18 @@ tmp_build_dir/s/3d.gnu.TPROF.MPI.CUDA.EXE/AMReX_Config.H:
 ../../amrex/Src/Base/AMReX_RealVect.H:
 
 ../../amrex/Src/Base/AMReX_Arena.H:
+
+/home/bowei/miniconda3/envs/ferrocuda12/include/mpi-ext.h:
+
+/home/bowei/miniconda3/envs/ferrocuda12/include/openmpi/mpiext/mpiext_affinity_c.h:
+
+/home/bowei/miniconda3/envs/ferrocuda12/include/openmpi/mpiext/mpiext_cuda_c.h:
+
+/home/bowei/miniconda3/envs/ferrocuda12/include/openmpi/mpiext/mpiext_ftmpi_c.h:
+
+/home/bowei/miniconda3/envs/ferrocuda12/include/openmpi/mpiext/mpiext_rocm_c.h:
+
+/home/bowei/miniconda3/envs/ferrocuda12/include/openmpi/mpiext/mpiext_shortfloat_c.h:
 
 ../../amrex/Src/Base/AMReX_ParmParse.H:
 

@@ -1,6 +1,8 @@
 tmp_build_dir/o/3d.gnu.TPROF.MPI.CUDA.EXE/SignalHandling.o : ../Source/Utils/ablastr/utils/SignalHandling.cpp \
     ../Source/Utils/ablastr/utils/SignalHandling.H \
     tmp_build_dir/s/3d.gnu.TPROF.MPI.CUDA.EXE/AMReX_Config.H \
+    /home/bowei/miniconda3/envs/ferrocuda12/include/mpi.h \
+    /home/bowei/miniconda3/envs/ferrocuda12/include/mpi_portable_platform.h \
     ../Source/Utils/ablastr/utils/TextMsg.H \
     ../../amrex/Src/Base/AMReX.H \
     ../../amrex/Src/Base/AMReX_GpuQualifiers.H \
@@ -65,6 +67,10 @@ tmp_build_dir/o/3d.gnu.TPROF.MPI.CUDA.EXE/SignalHandling.o : ../Source/Utils/abl
 ../Source/Utils/ablastr/utils/SignalHandling.H:
 
 tmp_build_dir/s/3d.gnu.TPROF.MPI.CUDA.EXE/AMReX_Config.H:
+
+/home/bowei/miniconda3/envs/ferrocuda12/include/mpi.h:
+
+/home/bowei/miniconda3/envs/ferrocuda12/include/mpi_portable_platform.h:
 
 ../Source/Utils/ablastr/utils/TextMsg.H:
 
