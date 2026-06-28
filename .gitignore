@@ -19,7 +19,7 @@ chk*/
 Backtrace.*
 *.h5
 *.dat
-*.log
+
 *.ex
 *.o
 *.mod
