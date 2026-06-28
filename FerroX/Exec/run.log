@@ -1,0 +1,16 @@
+nohup: ignoring input
+===== START =====
+Fri Jun 26 00:34:17 CST 2026
+--------------------------------------------------------------------------
+prterun was unable to launch the specified application as it could not
+access an executable:
+
+   Executable: ../../main3d.gnu.TPROF.MPI.CUDA.ex
+   Node: Precision-7875-Tower
+
+while attempting to start process rank 0.
+--------------------------------------------------------------------------
+ELAPSED=00:00:00 (HH:MM:SS)
+EXIT_CODE=183
+===== END =====
+Fri Jun 26 00:34:17 CST 2026

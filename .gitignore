@@ -19,7 +19,6 @@ chk*/
 Backtrace.*
 *.h5
 *.dat
-
 *.ex
 *.o
 *.mod
