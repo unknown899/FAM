@@ -2,6 +2,59 @@
 
 from pathlib import Path
 import html
+import re
+from datetime import datetime, timedelta
+
+def read_run_log(folder):
+    logfile = folder / "run.log"
+    if not logfile.exists():
+        logfile = folder / "plts/run.log"
+    if not logfile.exists():
+        return None, None, None
+    
+    print(f"Reading run log: {logfile}")
+    with open(logfile, errors="ignore") as f:
+        lines = [line.strip() for line in f if line.strip()]
+
+    # 只取最後 200 行
+    lines = lines[-200:]
+
+    end_time = None
+    start_time = None
+    elapsed_hms = None
+    elapsed_sec = None
+
+    # 最後一行 = End Time
+    if lines:
+        try:
+            end_time_str = lines[-1]
+            end_time = datetime.strptime(
+                end_time_str,
+                "%a %b %d %H:%M:%S %Z %Y"
+            )
+        except:
+            pass
+
+    # 找 Total run time
+    for line in lines:
+        if line.startswith("Total run time"):
+            m = re.search(r'([\d.]+)', line)
+            if m:
+                elapsed_sec = float(m.group(1))
+            break
+
+    if elapsed_sec is not None:
+        if end_time is not None:
+            start_time = end_time - timedelta(seconds=elapsed_sec)
+
+        h = int(elapsed_sec // 3600)
+        m = int((elapsed_sec % 3600) // 60)
+        s = int(elapsed_sec % 60)
+
+        elapsed_hms = f"{h:02d}:{m:02d}:{s:02d}"
+    print(f"Start Time: {start_time}, End Time: {end_time}, Elapsed: {elapsed_hms}")
+    return start_time, end_time, elapsed_hms
+
 
 wanted = [
     "alpha",
@@ -95,23 +148,34 @@ for folder in sorted(Path(".").glob("MFIS*")):
     params = read_inputs(inp)
 
     fe_lo = params.get("FE_lo")
-    fe_lo=fe_lo[2]
+    fe_lo = fe_lo[2]
+
     fe_hi = params.get("FE_hi")
-    fe_hi=fe_hi[2]
+    fe_hi = fe_hi[2]
 
     t_fe = None
     if fe_lo is not None and fe_hi is not None:
-        t_fe = (fe_hi - fe_lo)
+        t_fe = fe_hi - fe_lo
 
     imgs = find_images(folder)
 
+    # 找 MFIS*/run.log
+    start_time, end_time, elapsed_hms = read_run_log(
+        folder
+    )
+
     rows.append({
-    "folder": folder.name,
-    "params": params,
-    "tfe": t_fe,
-    "PV Curve": imgs["PV"],
-    "Pz Stack": imgs["Pz"],
-})
+        "folder": folder.name,
+        "params": params,
+        "tfe": t_fe,
+
+        "Start Time": start_time,
+        "End Time": end_time,
+        "Elapsed": elapsed_hms,
+        
+        "PV Curve": imgs["PV"],
+        "Pz Stack": imgs["Pz"],
+    })
 
 from datetime import datetime
 
@@ -212,12 +276,20 @@ Last Update :
 
 <div>
 Total Experiments :
-<span id="total_exp">{len(rows)}</span>
+<span id="total_exp">27</span>
 </div>
 </p>
 
 <p class="note">
 * All parameters are in SI units.
+</p>
+
+<p class="note">
+* Searching format: parameter1.operator1(=, >=, <=, >, <).value1 (space) parameter2.operator2.value2 ...
+</p>
+
+<p class="note">
+* Searching example: gamma<=1.5e11 T_FE>=8e-9.
 </p>
 
 <input id="search" placeholder="Search...">
@@ -238,6 +310,9 @@ for p in wanted:
 
 
 html_text += "<th>T_FE</th>"
+html_text += "<th>Start Time</th>"
+html_text += "<th>End Time</th>"
+html_text += "<th>Elapsed</th>"
 for title in IMAGE_FILES:
     html_text += f"<th>{title}</th>"
 
@@ -270,6 +345,9 @@ for r in rows:
         html_text += f"<td>{txt}</td>"
 
     html_text += f"<td>{sci(r['tfe'])}</td>"
+    html_text += f"<td>{r['Start Time']}</td>"
+    html_text += f"<td>{r['End Time']}</td>"
+    html_text += f"<td>{r['Elapsed']}</td>"
 
     for key in IMAGE_FILES:
         img = r[key]
@@ -297,23 +375,100 @@ html_text += """
 
 <script>
 
-const search=document.getElementById("search");
+const search = document.getElementById("search");
 
-search.onkeyup=function(){
+function updateTable() {
 
-let filter=this.value.toLowerCase();
+    const filter = search.value.trim();
+    const rows = document.querySelectorAll("#tbl tbody tr");
 
-let rows=document.querySelectorAll("#tbl tbody tr");
+    let count = 0;
 
-rows.forEach(function(r){
+    // 將搜尋字串拆成多個條件
+    // 例如 "alpha=-8e9 T_FE=8e-9"
+    const conditions = filter === ""
+        ? []
+        : filter.split(/\s+/).map(str => {
+            const m = str.match(/^(\w+)(<=|>=|=|<|>)(.+)$/);
+            if (!m) return null;
 
-let txt=r.innerText.toLowerCase();
+            return {
+                key: m[1],
+                op: m[2],
+                value: Number(m[3])
+            };
+        }).filter(c => c);
 
-r.style.display=txt.includes(filter)?"":"none";
+    rows.forEach(r => {
 
-});
+        const cells = r.querySelectorAll("td");
 
-};
+        if (cells.length < 8) {
+            r.style.display = "none";
+            return;
+        }
+
+        // 每列資料
+        const row = {
+            folder : cells[0].textContent.trim(),
+            alpha  : Number(cells[1].textContent),
+            beta   : Number(cells[2].textContent),
+            gamma  : Number(cells[3].textContent),
+            g11    : Number(cells[4].textContent),
+            t_DE   : Number(cells[5].textContent),
+            t_OX   : Number(cells[6].textContent),
+            T_FE   : Number(cells[7].textContent),
+        };
+
+        // 沒輸入任何條件 → 全部顯示
+        let show = true;
+
+        for (const c of conditions) {
+
+            const v = row[c.key];
+
+            if (v === undefined) {
+                show = false;
+                break;
+            }
+
+            switch (c.op) {
+
+                case "=":
+                    if (v !== c.value) show = false;
+                    break;
+
+                case ">":
+                    if (!(v > c.value)) show = false;
+                    break;
+
+                case "<":
+                    if (!(v < c.value)) show = false;
+                    break;
+
+                case ">=":
+                    if (!(v >= c.value)) show = false;
+                    break;
+
+                case "<=":
+                    if (!(v <= c.value)) show = false;
+                    break;
+            }
+
+            if (!show) break;
+        }
+
+        r.style.display = show ? "" : "none";
+
+        if (show) count++;
+
+    });
+
+    document.getElementById("total_exp").textContent = count;
+}
+
+search.onkeyup = updateTable;
+updateTable();
 
 </script>
 
