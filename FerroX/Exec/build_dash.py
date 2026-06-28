@@ -291,7 +291,7 @@ for r in rows:
 
 html_text += """
 
-<tbody id="exp_table">
+</tbody>
 
 </table>
 
