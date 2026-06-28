@@ -88,7 +88,7 @@ img:hover{
 <p class="subtitle">
 <div>
 Last Update :
-P26-06-28 16:14:53</span>
+<span id="last_update">2026-06-28 18:05:20</span>
 </div>
 
 <div>
@@ -99,6 +99,14 @@ Total Experiments :
 
 <p class="note">
 * All parameters are in SI units.
+</p>
+
+<p class="note">
+* Searching format: parameter1.operator1(=, >=, <=, >, <).value1 (space) parameter2.operator2.value2 ...
+</p>
+
+<p class="note">
+* Searching example: gamma<=1.5e11 T_FE>=8e-9.
 </p>
 
 <input id="search" placeholder="Search...">
@@ -386,8 +394,6 @@ Total Experiments :
 <tr>
 
 
-
-
 </tr>
 <tr>
 <td class="folder">MFIS_t_8_nomi_19</td><td class="num">-8.000e+09</td><td class="num">3.300e+11</td><td class="num">1.500e+11</td><td class="num">1.000e+02</td><td class="num">1.000e-09</td><td class="num">1.000e-09</td><td class="num">8.000e-09</td>
@@ -410,23 +416,100 @@ Total Experiments :
 
 <script>
 
-const search=document.getElementById("search");
+const search = document.getElementById("search");
 
-search.onkeyup=function(){
+function updateTable() {
 
-let filter=this.value.toLowerCase();
+    const filter = search.value.trim();
+    const rows = document.querySelectorAll("#tbl tbody tr");
 
-let rows=document.querySelectorAll("#tbl tbody tr");
+    let count = 0;
 
-rows.forEach(function(r){
+    // 將搜尋字串拆成多個條件
+    // 例如 "alpha=-8e9 T_FE=8e-9"
+    const conditions = filter === ""
+        ? []
+        : filter.split(/\s+/).map(str => {
+            const m = str.match(/^(\w+)(<=|>=|=|<|>)(.+)$/);
+            if (!m) return null;
 
-let txt=r.innerText.toLowerCase();
+            return {
+                key: m[1],
+                op: m[2],
+                value: Number(m[3])
+            };
+        }).filter(c => c);
 
-r.style.display=txt.includes(filter)?"":"none";
+    rows.forEach(r => {
 
-});
+        const cells = r.querySelectorAll("td");
 
-};
+        if (cells.length < 8) {
+            r.style.display = "none";
+            return;
+        }
+
+        // 每列資料
+        const row = {
+            folder : cells[0].textContent.trim(),
+            alpha  : Number(cells[1].textContent),
+            beta   : Number(cells[2].textContent),
+            gamma  : Number(cells[3].textContent),
+            g11    : Number(cells[4].textContent),
+            t_DE   : Number(cells[5].textContent),
+            t_OX   : Number(cells[6].textContent),
+            T_FE   : Number(cells[7].textContent),
+        };
+
+        // 沒輸入任何條件 → 全部顯示
+        let show = true;
+
+        for (const c of conditions) {
+
+            const v = row[c.key];
+
+            if (v === undefined) {
+                show = false;
+                break;
+            }
+
+            switch (c.op) {
+
+                case "=":
+                    if (v !== c.value) show = false;
+                    break;
+
+                case ">":
+                    if (!(v > c.value)) show = false;
+                    break;
+
+                case "<":
+                    if (!(v < c.value)) show = false;
+                    break;
+
+                case ">=":
+                    if (!(v >= c.value)) show = false;
+                    break;
+
+                case "<=":
+                    if (!(v <= c.value)) show = false;
+                    break;
+            }
+
+            if (!show) break;
+        }
+
+        r.style.display = show ? "" : "none";
+
+        if (show) count++;
+
+    });
+
+    document.getElementById("total_exp").textContent = count;
+}
+
+search.onkeyup = updateTable;
+updateTable();
 
 </script>
 
