@@ -1,6 +1,3 @@
-nohup: ignoring input
-===== START =====
-Fri Jun 26 00:34:17 CST 2026
 --------------------------------------------------------------------------
 prterun was unable to launch the specified application as it could not
 access an executable:
@@ -10,7 +7,5 @@ access an executable:
 
 while attempting to start process rank 0.
 --------------------------------------------------------------------------
-ELAPSED=00:00:00 (HH:MM:SS)
 EXIT_CODE=183
-===== END =====
-Fri Jun 26 00:34:17 CST 2026
+Mon Jun 29 00:45:40 CST 2026
