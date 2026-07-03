@@ -1,0 +1,200 @@
+MLMG: Timers: Solve = 0.108015328 Iter = 0.107811384 Bottom = 0.107456113
+2 iterations :: err = 3.745841316e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.0176302941
+Advanced step 134677 in 0.231331334 seconds
+ 
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.0001806616783, 6.06952726e-13
+MLMG: Timers: Solve = 0.103026531 Iter = 0.102806442 Bottom = 0.102450227
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 4.980360092e-05, 1.673206605e-13
+MLMG: Timers: Solve = 0.106845351 Iter = 0.106636043 Bottom = 0.106282051
+2 iterations :: err = 3.246959366e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.01763109448
+Advanced step 134678 in 0.226288279 seconds
+ 
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 7.828325033e-05, 2.634086496e-13
+MLMG: Timers: Solve = 0.106706452 Iter = 0.106485316 Bottom = 0.106130614
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.0001552700996, 5.224551496e-13
+MLMG: Timers: Solve = 0.103031647 Iter = 0.102827353 Bottom = 0.102476316
+2 iterations :: err = 6.926812547e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.0176302941
+Advanced step 134679 in 0.226258775 seconds
+ 
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.0002179183066, 7.321204555e-13
+MLMG: Timers: Solve = 0.108936814 Iter = 0.108714171 Bottom = 0.108362654
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 8.507817984e-05, 2.858294778e-13
+MLMG: Timers: Solve = 0.104256836 Iter = 0.10405415 Bottom = 0.103699508
+2 iterations :: err = 4.817372644e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.01763109448
+Advanced step 134680 in 0.229632647 seconds
+ 
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 9.144979692e-05, 3.077116421e-13
+MLMG: Timers: Solve = 0.107688698 Iter = 0.107470442 Bottom = 0.107119808
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 4.261732101e-05, 1.433993981e-13
+MLMG: Timers: Solve = 0.110880639 Iter = 0.110674645 Bottom = 0.110322118
+2 iterations :: err = 3.998194573e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.0176302941
+Advanced step 134681 in 0.235022451 seconds
+ 
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 7.6750468e-05, 2.578516164e-13
+MLMG: Timers: Solve = 0.104071257 Iter = 0.103856904 Bottom = 0.10350122
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 8.905465243e-05, 2.991888737e-13
+MLMG: Timers: Solve = 0.107144038 Iter = 0.106937204 Bottom = 0.10658295
+2 iterations :: err = 5.622602902e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.01763109448
+Advanced step 134682 in 0.227490936 seconds
+ 
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 9.554624557e-05, 3.214954337e-13
+MLMG: Timers: Solve = 0.112613304 Iter = 0.112394835 Bottom = 0.112040204
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 8.923330022e-05, 3.002535409e-13
+MLMG: Timers: Solve = 0.107479646 Iter = 0.107276163 Bottom = 0.106920138
+2 iterations :: err = 4.048976337e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.0176302941
+Advanced step 134683 in 0.236514247 seconds
+ 
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 9.191781282e-05, 3.088079751e-13
+MLMG: Timers: Solve = 0.105062595 Iter = 0.104845423 Bottom = 0.104492154
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 4.801550506e-05, 1.613133563e-13
+MLMG: Timers: Solve = 0.103152643 Iter = 0.102947741 Bottom = 0.102584536
+2 iterations :: err = 5.641170387e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.01763109448
+Advanced step 134684 in 0.224800703 seconds
+ 
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 9.191036224e-05, 3.092613592e-13
+MLMG: Timers: Solve = 0.105729553 Iter = 0.105511869 Bottom = 0.105158786
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.0001117959619, 3.761727217e-13
+MLMG: Timers: Solve = 0.102849994 Iter = 0.102645135 Bottom = 0.102291032
+2 iterations :: err = 5.699442515e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.0176302941
+Advanced step 134685 in 0.225113613 seconds
+ 
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.0001643672585, 5.522098354e-13
+MLMG: Timers: Solve = 0.104707056 Iter = 0.104486121 Bottom = 0.104130761
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 4.270413784e-05, 1.434692355e-13
+MLMG: Timers: Solve = 0.124347664 Iter = 0.12414049 Bottom = 0.123786133
+2 iterations :: err = 4.079276544e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.01763109448
+Advanced step 134686 in 0.245380321 seconds
+ 
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 8.591343483e-05, 2.890828083e-13
+MLMG: Timers: Solve = 0.1055242 Iter = 0.105306776 Bottom = 0.104952132
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 9.906291962e-05, 3.33328391e-13
+MLMG: Timers: Solve = 0.106769442 Iter = 0.106566167 Bottom = 0.106212327
+2 iterations :: err = 6.324030146e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.0176302941
+Advanced step 134687 in 0.228763785 seconds
+ 
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 6.468760036e-05, 2.173250893e-13
+MLMG: Timers: Solve = 0.106934642 Iter = 0.106715893 Bottom = 0.106359538
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.0001374930143, 4.61922864e-13
+MLMG: Timers: Solve = 0.108730886 Iter = 0.108532382 Bottom = 0.108181928
+2 iterations :: err = 6.354099326e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.01763109448
+Advanced step 134688 in 0.232115343 seconds
+ 
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.0001393593848, 4.689185387e-13
+MLMG: Timers: Solve = 0.106774106 Iter = 0.106556677 Bottom = 0.10620047
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.000227086246, 7.641031912e-13
+MLMG: Timers: Solve = 0.106578539 Iter = 0.106373538 Bottom = 0.106019517
+2 iterations :: err = 4.659542135e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.0176302941
+Advanced step 134689 in 0.229817751 seconds
+ 
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.0002279803157, 7.659248789e-13
+MLMG: Timers: Solve = 0.106335162 Iter = 0.106115815 Bottom = 0.105759272
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.0001876056194, 6.302816579e-13
+MLMG: Timers: Solve = 0.105761371 Iter = 0.105559578 Bottom = 0.105205918
+2 iterations :: err = 4.848120954e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.01763109448
+Advanced step 134690 in 0.228534133 seconds
+ 
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.0002580285072, 8.682181737e-13
+MLMG: Timers: Solve = 0.108977058 Iter = 0.108758591 Bottom = 0.108404319
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297193165.3
+MLMG: Initial residual (resid0) = 297193165.3
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.0001971051097, 6.63222216e-13
+MLMG: Timers: Solve = 0.105972387 Iter = 0.105770588 Bottom = 0.105414923
+2 iterations :: err = 5.729595682e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 0.0176302941
+Advanced step 134691 in 0.231497715 seconds
+ 
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+MLMG: Final Iter. 3 resid, resid/bnorm = 0.0001085102558, 3.645521075e-13
+MLMG: Timers: Solve = 0.104157893 Iter = 0.103939232 Bottom = 0.103584357
+1 iterations :: err = 1
+MLMG: Initial rhs               = 297653623.7
+MLMG: Initial residual (resid0) = 297653623.7
+--------------------------------------------------------------------------
+prterun noticed that process rank 0 with PID 1768682 on node 4b42b8f87eeb exited on
+signal 15 (Terminated).
+--------------------------------------------------------------------------
+EXIT_CODE=143
+Thu Jul  2 04:51:22 UTC 2026
