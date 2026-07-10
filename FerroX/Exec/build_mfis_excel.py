@@ -256,11 +256,12 @@ def read_pv_curve(folder: Path, run_id: str, sweep_values: np.ndarray, sweep_bra
         )
 
     n = len(df_raw)
-    out = pd.DataFrame()
-    out["run_id"] = run_id
+    out = pd.DataFrame(index=np.arange(n))
+
+    #out["run_id"] = run_id
     out["folder"] = folder.name
-    out["curve_index"] = np.arange(n, dtype=int)
-    out["step_id"] = df_raw[step_col].values if step_col else np.arange(n, dtype=int)
+    out["point_id"] = np.arange(n, dtype=int)
+    #out["step_id"] = df_raw[step_col].values if step_col else np.arange(n, dtype=int)
 
     if vapplied_col is not None:
         out["V_applied"] = pd.to_numeric(df_raw[vapplied_col], errors="coerce")
@@ -272,7 +273,7 @@ def read_pv_curve(folder: Path, run_id: str, sweep_values: np.ndarray, sweep_bra
         out["V_applied"] = np.nan
         out["branch"] = "unknown"
 
-    out["Vg_mean"] = pd.to_numeric(df_raw[vg_col], errors="coerce")
+    #out["Vg_mean"] = pd.to_numeric(df_raw[vg_col], errors="coerce")
     out["P_mean"] = pd.to_numeric(df_raw[p_col], errors="coerce")
 
     # Keep optional statistics if your CSV already contains them
@@ -284,12 +285,17 @@ def read_pv_curve(folder: Path, run_id: str, sweep_values: np.ndarray, sweep_bra
         "Vg_max": ["Vg_max", "Vmax"],
         "Vg_std": ["Vg_std", "Vstd"],
     }
+    
+    '''
+    
     for out_col, candidates in optional.items():
         c = find_column(df_raw, candidates)
         if c is not None:
             out[out_col] = pd.to_numeric(df_raw[c], errors="coerce")
+            
+    '''
 
-    out["pv_csv_path"] = str(csv_path)
+    #out["pv_csv_path"] = str(csv_path)
     return out, str(csv_path), None
 
 
@@ -481,18 +487,18 @@ def extract_pz_stacks(
             Vg_mean_csv = pv_row.get("Vg_mean", np.nan)
             P_mean_csv = pv_row.get("P_mean", np.nan)
             branch = pv_row.get("branch", "")
-            curve_index = int(pv_row.get("curve_index", i))
+            point_id = int(pv_row.get("point_id", i))
         else:
             V_applied = np.nan
             Vg_mean_csv = np.nan
             P_mean_csv = np.nan
             branch = "unknown"
-            curve_index = i
+            point_id = i
 
         index_rows.append({
             "run_id": run_id,
             "folder": folder.name,
-            "curve_index": curve_index,
+            "point_id": point_id,
             "plot_index": i,
             "plotfile": str(plotfile),
             "plot_step": get_step_from_name(name),
