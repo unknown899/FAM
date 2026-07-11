@@ -687,8 +687,6 @@ def extract_pz_stacks(
             "point_id": point_id,
 
             # 第幾張 Pz_stack / Phi_stack
-            "stack_index": i,
-
             "branch": branch,
             "V_applied": V_applied,
             "P_mean": P_mean_csv,
