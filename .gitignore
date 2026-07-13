@@ -35,3 +35,6 @@ Backtrace.*
 # Ignore all build directories named tmp_build_dir
 tmp_build_dir/
 **/tmp_build_dir/
+# FerroX runtime files
+FerroX/Exec/batch_driver.log
+FerroX/Exec/batch_driver.pid
