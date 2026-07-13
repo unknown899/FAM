@@ -1,0 +1,21 @@
+Exec directory: /home/bowei/FAM/FerroX/Exec
+Inputs template folder: MFIS_t_8_nomi_29
+Notebook template folder: MFIS_t_8_nomi_33
+Nominal parameters: {'alpha': -6250000000.0, 'beta': 5000000000000.0, 'gamma': 150000000000.0}
+Fixed parameters used for duplicate checking: {'BigGamma': 100.0, 'g11': 1e-09, 'g44': 1e-09}
+Duplicate-check thickness: 8.000000e-09 m
+Loaded 60 existing experiment rows
+Plan file: /home/bowei/FAM/FerroX/Exec/batch_plan_MFIS_t_8_nomi_29_var_1_2.csv
+  MFIS_t_8_nomi_29_var_1: alpha=-6.364758e+09, beta=4.065467e+12, gamma=2.433091e+11, design=LHS
+  MFIS_t_8_nomi_29_var_2: alpha=-5.995855e+09, beta=3.969295e+12, gamma=9.125861e+10, design=LHS
+Prepared 2 cases
+Detected GPUs: [0, 1]; maximum batch parallelism: 2
+[------------------------------] 0/2 completed | running=0 | failed=0
+Started MFIS_t_8_nomi_29_var_1 on physical GPU 0
+[------------------------------] 0/2 completed | running=1 | failed=0
+Started MFIS_t_8_nomi_29_var_2 on physical GPU 1
+[------------------------------] 0/2 completed | running=2 | failed=0[###############---------------] 1/2 completed | running=1 | failed=0  MFIS_t_8_nomi_29_var_2: simulation_ok, GPU 1, elapsed 65.8 min
+[##############################] 2/2 completed | running=0 | failed=0
+  MFIS_t_8_nomi_29_var_1: simulation_ok, GPU 0, elapsed 103.2 min
+Batch finished: 2 succeeded, 0 failed
+Status file: /home/bowei/FAM/FerroX/Exec/batch_status_MFIS_t_8_nomi_29_var_1_2.csv
