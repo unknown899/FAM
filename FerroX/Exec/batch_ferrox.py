@@ -57,7 +57,7 @@ NUMBER_PATTERN = r"[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[Ee][+-]?\d+)?"
 PARAMETERS = ("alpha", "beta", "gamma")
 OPTIONAL_FIXED_DUPLICATE_KEYS = ("BigGamma", "g11", "g44")
 VARIATION_FRACTIONS = {
-    "alpha": 0.10,
+    "alpha": 0.15,
     "beta": 0.30,
     "gamma": 0.70,
 }
