@@ -544,14 +544,17 @@ def write_plan_csv(
     path: Path,
     prepared_cases: list[tuple[Path, Candidate]],
     nominal: dict[str, float],
+    seed: int,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+
     with path.open("w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(
             file,
             fieldnames=[
                 "folder",
                 "design",
+                "seed",
                 "alpha",
                 "beta",
                 "gamma",
@@ -562,21 +565,38 @@ def write_plan_csv(
                 "landau_ec_estimate",
             ],
         )
+
         writer.writeheader()
+
         for folder, candidate in prepared_cases:
             values = candidate.values()
+
             writer.writerow(
                 {
                     "folder": folder.name,
                     "design": candidate.design,
+                    "seed": seed,
                     "alpha": f"{candidate.alpha:.12e}",
                     "beta": f"{candidate.beta:.12e}",
                     "gamma": f"{candidate.gamma:.12e}",
-                    "alpha_change_percent": 100.0 * (candidate.alpha / nominal["alpha"] - 1.0),
-                    "beta_change_percent": 100.0 * (candidate.beta / nominal["beta"] - 1.0),
-                    "gamma_change_percent": 100.0 * (candidate.gamma / nominal["gamma"] - 1.0),
-                    "landau_ps_estimate": landau_spontaneous_p(**values),
-                    "landau_ec_estimate": landau_intrinsic_ec(**values),
+                    "alpha_change_percent": (
+                        100.0
+                        * (candidate.alpha / nominal["alpha"] - 1.0)
+                    ),
+                    "beta_change_percent": (
+                        100.0
+                        * (candidate.beta / nominal["beta"] - 1.0)
+                    ),
+                    "gamma_change_percent": (
+                        100.0
+                        * (candidate.gamma / nominal["gamma"] - 1.0)
+                    ),
+                    "landau_ps_estimate": (
+                        landau_spontaneous_p(**values)
+                    ),
+                    "landau_ec_estimate": (
+                        landau_intrinsic_ec(**values)
+                    ),
                 }
             )
 
@@ -1112,7 +1132,12 @@ def main() -> int:
         (exec_dir / f"{clean_prefix}_{args.start_index + offset}", candidate)
         for offset, candidate in enumerate(candidates)
     ]
-    write_plan_csv(plan_csv, planned_cases, nominal)
+    write_plan_csv(
+        plan_csv,
+        planned_cases,
+        nominal,
+        args.seed,
+    )
     print(f"Plan file: {plan_csv}")
     for folder, candidate in planned_cases:
         print(
