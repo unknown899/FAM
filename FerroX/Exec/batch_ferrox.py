@@ -238,23 +238,10 @@ def candidate_matches_record(
     fixed_values: dict[str, float],
 ) -> bool:
     candidate_values = candidate.values()
-    if not all(
+    return all(
         floats_close(candidate_values[key], record[key])
         for key in PARAMETERS
-    ):
-        return False
-
-    # Compare fixed parameters whenever both the inputs template and worksheet
-    # provide them. Keys are normalized to lower case in the Excel records.
-    for key, value in fixed_values.items():
-        normalized_key = key.lower()
-        if normalized_key in record and not floats_close(value, record[normalized_key]):
-            return False
-
-    # Compare thickness whenever it is available in the worksheet.
-    if "t_fe" in record:
-        return floats_close(t_fe_m, record["t_fe"], rel_tol=1e-7)
-    return True
+    )
 
 
 def is_existing_duplicate(
