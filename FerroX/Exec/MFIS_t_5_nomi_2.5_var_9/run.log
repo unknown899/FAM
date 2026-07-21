@@ -1,0 +1,200 @@
+MLMG: Initial rhs               = 295503719.5
+MLMG: Initial residual (resid0) = 9452912596
+MLMG: Final Iter. 3 resid, resid/resid0 = 0.00257586243, 2.724940492e-13
+MLMG: Timers: Solve = 0.048062751 Iter = 0.047887794 Bottom = 0.047592034
+2 iterations :: err = 3.910245248e-11
+Steady state check : (phi(t) - phi(t-1)).norm0() = 3.845432603e-07
+Advanced step 8936 in 0.11173829 seconds
+ 
+MLMG: Initial rhs               = 295503719.5
+MLMG: Initial residual (resid0) = 9452912585
+MLMG: Final Iter. 3 resid, resid/resid0 = 0.001661487118, 1.757645703e-13
+MLMG: Timers: Solve = 0.047908907 Iter = 0.047733229 Bottom = 0.047437449
+1 iterations :: err = 1
+MLMG: Initial rhs               = 295503753.6
+MLMG: Initial residual (resid0) = 9452912585
+MLMG: Final Iter. 3 resid, resid/resid0 = 0.002500656061, 2.645381557e-13
+MLMG: Timers: Solve = 0.048638769 Iter = 0.048463823 Bottom = 0.048169464
+2 iterations :: err = 1.190802669e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 1.536022598e-07
+Advanced step 8937 in 0.112261728 seconds
+ 
+MLMG: Initial rhs               = 295503753.6
+MLMG: Initial residual (resid0) = 9452912581
+MLMG: Final Iter. 3 resid, resid/resid0 = 0.003119994368, 3.300564077e-13
+MLMG: Timers: Solve = 0.049329943 Iter = 0.049155096 Bottom = 0.048860747
+1 iterations :: err = 1
+MLMG: Initial rhs               = 295503767.2
+MLMG: Initial residual (resid0) = 9452912581
+MLMG: Final Iter. 3 resid, resid/resid0 = 0.0008941788983, 9.459295119e-14
+MLMG: Timers: Solve = 0.044995155 Iter = 0.044820359 Bottom = 0.044522906
+2 iterations :: err = 2.610872556e-10
+Steady state check : (phi(t) - phi(t-1)).norm0() = 6.13169943e-08
+Advanced step 8938 in 0.110017908 seconds
+ 
+step = 8938, Phi_Bc_hi = -4, num_Vapp = 46, sign = -1
+MLMG: Initial rhs               = 295503767.2
+MLMG: Initial residual (resid0) = 8400061885
+MLMG: Final Iter. 3 resid, resid/resid0 = 0.003310740551, 3.941328762e-13
+MLMG: Timers: Solve = 0.048137024 Iter = 0.047958462 Bottom = 0.047659707
+1 iterations :: err = 1
+MLMG: Initial rhs               = 279485721.5
+MLMG: Initial residual (resid0) = 8400061885
+MLMG: Final Iter. 3 resid, resid/resid0 = 0.00210198484, 2.502344469e-13
+MLMG: Timers: Solve = 0.048120088 Iter = 0.047943649 Bottom = 0.047645956
+2 iterations :: err = 7.921676737e-05
+MLMG: Initial rhs               = 279242227.5
+MLMG: Initial residual (resid0) = 8400061885
+MLMG: Final Iter. 3 resid, resid/resid0 = 0.002195915207, 2.614165511e-13
+MLMG: Timers: Solve = 0.04789848 Iter = 0.047725397 Bottom = 0.047429967
+3 iterations :: err = 7.526409704e-08
+voltage_sweep == 1 && num_Vapp == num_Vapp_max!
+High-water FAB megabyte spread across MPI nodes: [171 ... 171]
+Current     FAB megabyte spread across MPI nodes: [136 ... 136]
+Total run time 1486.610983 seconds
+
+
+TinyProfiler total time across processes [min...avg...max]: 1487 ... 1487 ... 1487
+
+----------------------------------------------------------------------------------------------
+Name                                           NCalls  Excl. Min  Excl. Avg  Excl. Max   Max %
+----------------------------------------------------------------------------------------------
+amrex::Dot()                                 14547390      397.5      397.5      397.5  26.74%
+MLABecLaplacian::Fapply()                     7346288      326.2      326.2      326.2  21.94%
+MLABecLaplacian::normalize()                  7328139      235.4      235.4      235.4  15.83%
+FabArray::norminf()                           7436757      169.6      169.6      169.6  11.41%
+ComputePhi_Rho()                                 8984      64.46      64.46      64.46   4.34%
+FillBoundary_nowait()                         7418118      60.37      60.37      60.37   4.06%
+FabArray::Saxpy_Saxpy()                       3653806      47.96      47.96      47.96   3.23%
+FabArray::Saypy_Saxpy()                       3619889      44.55      44.55      44.55   3.00%
+FabArray::Saxpy_Xpay()                        3599362      40.85      40.85      40.85   2.75%
+Calculate_Landau()                               8938      33.76      33.76      33.76   2.27%
+Calculate_Grad()                                 8938      17.05      17.05      17.05   1.15%
+ComputeEfromPhi()                               17876      15.83      15.83      15.83   1.07%
+MLCellLinOp::applyBC()                        7346288      11.64      11.64      11.64   0.78%
+FabArray::setVal()                             335369      3.953      3.953      3.953   0.27%
+amrex::Copy()                                  300024      3.269      3.269      3.269   0.22%
+MLCGSolver::bicgstab                            54444      3.002      3.002      3.002   0.20%
+MLCGSolver::ParallelAllReduce                18255640      1.374      1.374      1.374   0.09%
+main()                                              1      1.361      1.361      1.361   0.09%
+MLCellLinOp::apply()                          7346288     0.8707     0.8707     0.8707   0.06%
+FabArray::FillBoundary()                      7418118     0.8254     0.8254     0.8254   0.06%
+MLMG::solve()                                   18149     0.1152     0.1152     0.1152   0.01%
+MLMG::actualBottomSolve()                       54444    0.01914    0.01914    0.01914   0.00%
+MLCellLinOp::solutionResidual()                 72593   0.009303   0.009303   0.009303   0.00%
+MLMG::oneIter()                                 54444   0.008319   0.008319   0.008319   0.00%
+MLMG::mgVcycle_bottom                           54444   0.005745   0.005745   0.005745   0.00%
+MLMG::computeResidual()                         54444   0.005585   0.005585   0.005585   0.00%
+MLMG::mgVcycle()                                54444   0.004929   0.004929   0.004929   0.00%
+Other                                        15335515      6.657      6.657      6.657   0.45%
+----------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------
+Name                                           NCalls  Incl. Min  Incl. Avg  Incl. Max   Max %
+----------------------------------------------------------------------------------------------
+main()                                              1       1487       1487       1487 100.00%
+ComputePhi_Rho()                                 8984       1415       1415       1415  95.16%
+MLMG::solve()                                   18149       1346       1346       1346  90.52%
+MLMG::oneIter()                                 54444       1338       1338       1338  89.98%
+MLMG::mgVcycle()                                54444       1337       1337       1337  89.94%
+MLMG::mgVcycle_bottom                           54444       1337       1337       1337  89.94%
+MLMG::actualBottomSolve()                       54444       1337       1337       1337  89.94%
+MLCGSolver::bicgstab                            54444       1337       1337       1337  89.91%
+MLCellLinOp::apply()                          7346288        400        400        400  26.91%
+amrex::Dot()                                 14547390      397.5      397.5      397.5  26.74%
+MLABecLaplacian::Fapply()                     7346288      326.2      326.2      326.2  21.94%
+MLABecLaplacian::normalize()                  7328139      235.4      235.4      235.4  15.83%
+MLCGSolver::ParallelAllReduce                18255640      201.4      201.4      201.4  13.55%
+FabArray::norminf()                           7436757      169.6      169.6      169.6  11.41%
+MLCellLinOp::applyBC()                        7346288      72.89      72.89      72.89   4.90%
+FabArray::FillBoundary()                      7418118      61.92      61.92      61.92   4.16%
+FillBoundary_nowait()                         7418118      60.76      60.76      60.76   4.09%
+FabArray::Saxpy_Saxpy()                       3653806      47.96      47.96      47.96   3.23%
+FabArray::Saypy_Saxpy()                       3619889      44.55      44.55      44.55   3.00%
+FabArray::Saxpy_Xpay()                        3599362      40.85      40.85      40.85   2.75%
+Calculate_Landau()                               8938      33.76      33.76      33.76   2.27%
+Calculate_Grad()                                 8938      17.05      17.05      17.05   1.15%
+ComputeEfromPhi()                               17876      15.83      15.83      15.83   1.07%
+MLCellLinOp::solutionResidual()                 72593      4.943      4.943      4.943   0.33%
+FabArray::setVal()                             335369      3.953      3.953      3.953   0.27%
+MLMG::computeResidual()                         54444      3.492      3.492      3.492   0.23%
+amrex::Copy()                                  300024      3.269      3.269      3.269   0.22%
+Other                                        15335515      12.71      12.71      12.71   0.85%
+----------------------------------------------------------------------------------------------
+
+Device Memory Usage:
+-------------------------------------------------------------------------
+Name                                           Nalloc    AvgMem    MaxMem
+-------------------------------------------------------------------------
+The_Arena::Initialize()                             1     7   B    14 GiB
+main()                                           1360   118 MiB   122 MiB
+WritePlotfile()                                   752    11 KiB    33 MiB
+ResizeRandomSeed                                    2    13 MiB    13 MiB
+MLCGSolver::bicgstab                          4355520  9528 KiB    10 MiB
+MLMG::prepareForSolve()                            64  8135 KiB  8136 KiB
+MLABecLaplacian::define()                          64  7823 KiB  7824 KiB
+ComputePhi_Rho()                              2035584   176 KiB  7552 KiB
+MultiFab::OverlapMask()                        311610  1966   B  1889 KiB
+BndryData::define()                               192  1735 KiB  1736 KiB
+MLCellLinOp::defineAuxData()                      192   815 KiB   816 KiB
+FillBoundary_nowait()                          127046   176 KiB   180 KiB
+VisMF::Write(FabArray)                          13536    14   B   144 KiB
+FabArray::setVal()                             181520    74 KiB    74 KiB
+MultiFab::max()                                  8986  2058   B    74 KiB
+MultiFab::norm1                                 18330    18   B    72 KiB
+FabArray::norminf()                           7436757  8339   B    72 KiB
+amrex::Dot()                                 14547390    19 KiB    72 KiB
+amrex::Copy()                                   90985    29 KiB    29 KiB
+MLCellLinOp::applyBC()                        7364444    25 KiB    26 KiB
+MLCellLinOp::prepareForSolve()                      1     0   B    15 KiB
+FabArray::LinComb()                             18150  2048   B  4096   B
+MLABecLaplacian::Fapply()                      108888  3644   B  4096   B
+FabArray::setVal(val, thecmd, scomp, ncomp)         8     0   B  3328   B
+MultiFab::Divide()                              18330     1   B  2048   B
+MLCellLinOp::defineBC()                             1  1791   B  1792   B
+-------------------------------------------------------------------------
+
+Managed Memory Usage:
+---------------------------------------------------------
+Name                             Nalloc  AvgMem    MaxMem
+---------------------------------------------------------
+The_Managed_Arena::Initialize()       1   0   B  8192 KiB
+main()                                1   0   B    31 KiB
+---------------------------------------------------------
+
+Pinned Memory Usage:
+-------------------------------------------------------------------------
+Name                                           Nalloc    AvgMem    MaxMem
+-------------------------------------------------------------------------
+The_Pinned_Arena::Initialize()                      1     0   B  8192 KiB
+VisMF::Write(FabArray)                          14288   443   B  2124 KiB
+FillBoundary_nowait()                          127046   176 KiB   180 KiB
+FabArray::setVal()                             181520    74 KiB    74 KiB
+amrex::Copy()                                   90985    29 KiB    29 KiB
+MLCellLinOp::applyBC()                          18156    25 KiB    25 KiB
+MLCellLinOp::prepareForSolve()                      1     0   B    15 KiB
+FabArray::LinComb()                             18150  2048   B  4096   B
+MLABecLaplacian::Fapply()                      108888  3644   B  4096   B
+FabArray::setVal(val, thecmd, scomp, ncomp)         8     0   B  3328   B
+MultiFab::max()                                  8986  2048   B  2304   B
+MultiFab::Divide()                              18330     1   B  2048   B
+MLCellLinOp::setLevelBC()                          47     0   B  1792   B
+MultiFab::OverlapMask()                         18330     0   B  1792   B
+amrex::Dot()                                 14547390    68   B   256   B
+Unprofiled                                         15     0   B   256   B
+MultiFab::norm1                                 18330     0   B   256   B
+FabArray::norminf()                           7436757    28   B   256   B
+-------------------------------------------------------------------------
+
+Total GPU global memory (MB) spread across MPI: [20019 ... 20019]
+Free  GPU global memory (MB) spread across MPI: [4658 ... 4658]
+[The         Arena] max space (MB) allocated spread across MPI: [15014 ... 15014]
+[The         Arena] max space (MB) used      spread across MPI: [183 ... 183]
+[The Managed Arena] max space (MB) allocated spread across MPI: [8 ... 8]
+[The Managed Arena] max space (MB) used      spread across MPI: [0 ... 0]
+[The  Pinned Arena] max space (MB) allocated spread across MPI: [8 ... 8]
+[The  Pinned Arena] max space (MB) used      spread across MPI: [2 ... 2]
+AMReX (26.05-39-gbe2cc437644f) finalized
+
+EXIT_CODE=0
+Tue Jul 21 06:26:43 CST 2026
