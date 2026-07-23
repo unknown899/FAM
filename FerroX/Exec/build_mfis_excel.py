@@ -49,6 +49,10 @@ WANTED_PARAMS = [
 P_FIELD = ("boxlib", "Pz")
 PHI_FIELD = ("boxlib", "Phi")
 
+CHARGE_FIELD = ("boxlib", "charge")
+EPSILON_FIELD = ("boxlib", "epsilon")
+MASK_FIELD = ("boxlib", "mask")
+
 # Keep the same convention as your plotting code: P *= -1
 P_SIGN = -1.0
 
@@ -355,67 +359,124 @@ def read_one_plot(
     params: dict,
     yt_module,
     y_index=None,
+    read_static_fields=False,
 ):
     ds = yt_module.load(str(plotfile))
 
-    if P_FIELD not in ds.field_list:
-        raise RuntimeError(
-            f"{plotfile}: field {P_FIELD} not found. "
-            f"Available fields: {ds.field_list}"
-        )
+    # --------------------------------------------------------
+    # Required fields
+    # --------------------------------------------------------
+    for field in [
+        P_FIELD,
+        PHI_FIELD,
+        CHARGE_FIELD,
+    ]:
+        if field not in ds.field_list:
+            raise RuntimeError(
+                f"{plotfile}: field {field} not found"
+            )
 
-    # Pz full-domain array
+    # --------------------------------------------------------
+    # Read dynamic fields
+    # --------------------------------------------------------
     P = read_full_field_from_grids(
         ds,
-        P_FIELD
+        P_FIELD,
     ).astype(np.float32)
 
+    Phi = read_full_field_from_grids(
+        ds,
+        PHI_FIELD,
+    ).astype(np.float32)
+
+    charge = read_full_field_from_grids(
+        ds,
+        CHARGE_FIELD,
+    ).astype(np.float32)
+
+    # 保留原本 sign convention
     P *= P_SIGN
 
-    # Phi full-domain array
-    if PHI_FIELD in ds.field_list:
-        Phi = read_full_field_from_grids(
-            ds,
-            PHI_FIELD
-        ).astype(np.float32)
-
-        if Phi.shape != P.shape:
-            raise RuntimeError(
-                f"{plotfile}: Pz shape {P.shape} and "
-                f"Phi shape {Phi.shape} do not match"
-            )
-    else:
-        Phi = None
+    if not (
+        P.shape
+        == Phi.shape
+        == charge.shape
+    ):
+        raise RuntimeError(
+            f"{plotfile}: field shapes do not match\n"
+            f"Pz     : {P.shape}\n"
+            f"Phi    : {Phi.shape}\n"
+            f"charge : {charge.shape}"
+        )
 
     Nx, Ny, Nz = P.shape
 
+    # --------------------------------------------------------
+    # Static fields
+    # 只需要第一個 bias 讀一次
+    # --------------------------------------------------------
+    epsilon = None
+    mask = None
+
+    if read_static_fields:
+        for field in [
+            EPSILON_FIELD,
+            MASK_FIELD,
+        ]:
+            if field not in ds.field_list:
+                raise RuntimeError(
+                    f"{plotfile}: field {field} not found"
+                )
+
+        epsilon = read_full_field_from_grids(
+            ds,
+            EPSILON_FIELD,
+        ).astype(np.float32)
+
+        mask = read_full_field_from_grids(
+            ds,
+            MASK_FIELD,
+        ).astype(np.float32)
+
+    # --------------------------------------------------------
+    # Coordinates
+    # --------------------------------------------------------
     lo = np.asarray(
         ds.domain_left_edge.to_value(),
-        dtype=float
-    )
-    hi = np.asarray(
-        ds.domain_right_edge.to_value(),
-        dtype=float
+        dtype=float,
     )
 
-    dx = (hi - lo) / np.array(
-        [Nx, Ny, Nz],
-        dtype=float
+    hi = np.asarray(
+        ds.domain_right_edge.to_value(),
+        dtype=float,
+    )
+
+    dx = (
+        (hi - lo)
+        / np.array(
+            [Nx, Ny, Nz],
+            dtype=float,
+        )
     )
 
     x_nm = (
-        lo[0] + (np.arange(Nx) + 0.5) * dx[0]
+        lo[0]
+        + (np.arange(Nx) + 0.5) * dx[0]
     ) * 1e9
 
     y_nm = (
-        lo[1] + (np.arange(Ny) + 0.5) * dx[1]
+        lo[1]
+        + (np.arange(Ny) + 0.5) * dx[1]
     ) * 1e9
 
-    z_nm = (
-        lo[2] + (np.arange(Nz) + 0.5) * dx[2]
+    z_nm_full = (
+        lo[2]
+        + (np.arange(Nz) + 0.5) * dx[2]
     ) * 1e9
 
-    # Select y plane
+    # --------------------------------------------------------
+    # Select y slice
+    # --------------------------------------------------------
     if y_index is None:
         y_index_use = Ny // 2
     else:
@@ -423,94 +484,409 @@ def read_one_plot(
 
     if not 0 <= y_index_use < Ny:
         raise IndexError(
-            f"{plotfile}: y_index={y_index_use} is outside "
-            f"the valid range 0 to {Ny - 1}"
+            f"y_index={y_index_use}, "
+            f"but valid range is 0 to {Ny - 1}"
         )
 
-    # FE boundaries
+    # --------------------------------------------------------
+    # FE region
+    # --------------------------------------------------------
     fe_lo = params.get("FE_lo")
     fe_hi = params.get("FE_hi")
 
-    fe_z_lo = get_component(fe_lo, 2)
-    fe_z_hi = get_component(fe_hi, 2)
-    fe_x_lo = get_component(fe_lo, 0)
-    fe_x_hi = get_component(fe_hi, 0)
+    fe_z_lo = get_component(
+        fe_lo,
+        2,
+    )
 
-    # Select FE z range
-    if fe_z_lo is not None and fe_z_hi is not None:
-        z_lo_nm = min(fe_z_lo, fe_z_hi) * 1e9
-        z_hi_nm = max(fe_z_lo, fe_z_hi) * 1e9
+    fe_z_hi = get_component(
+        fe_hi,
+        2,
+    )
 
-        z_sel = (
-            (z_nm >= z_lo_nm) &
-            (z_nm <= z_hi_nm)
-        )
-    else:
-        z_sel = np.ones_like(
-            z_nm,
-            dtype=bool
-        )
+    fe_x_lo = get_component(
+        fe_lo,
+        0,
+    )
 
-    # Optionally select FE x range
+    fe_x_hi = get_component(
+        fe_hi,
+        0,
+    )
+
+    # FE z range
     if (
-        USE_FE_X_RANGE and
-        fe_x_lo is not None and
-        fe_x_hi is not None
+        fe_z_lo is not None
+        and fe_z_hi is not None
     ):
-        x_lo_nm = min(fe_x_lo, fe_x_hi) * 1e9
-        x_hi_nm = max(fe_x_lo, fe_x_hi) * 1e9
+        z_lo_nm = (
+            min(fe_z_lo, fe_z_hi)
+            * 1e9
+        )
+
+        z_hi_nm = (
+            max(fe_z_lo, fe_z_hi)
+            * 1e9
+        )
+
+        z_sel_fe = (
+            (z_nm_full >= z_lo_nm)
+            & (z_nm_full <= z_hi_nm)
+        )
+
+    else:
+        z_sel_fe = np.ones_like(
+            z_nm_full,
+            dtype=bool,
+        )
+
+    # x range
+    if (
+        USE_FE_X_RANGE
+        and fe_x_lo is not None
+        and fe_x_hi is not None
+    ):
+        x_lo_nm = (
+            min(fe_x_lo, fe_x_hi)
+            * 1e9
+        )
+
+        x_hi_nm = (
+            max(fe_x_lo, fe_x_hi)
+            * 1e9
+        )
 
         x_sel = (
-            (x_nm >= x_lo_nm) &
-            (x_nm <= x_hi_nm)
+            (x_nm >= x_lo_nm)
+            & (x_nm <= x_hi_nm)
         )
+
     else:
         x_sel = np.ones_like(
             x_nm,
-            dtype=bool
+            dtype=bool,
         )
 
     if not np.any(x_sel):
         raise RuntimeError(
-            f"{plotfile}: no x cells selected"
+            f"{plotfile}: no cells selected in x direction"
         )
 
-    if not np.any(z_sel):
+    if not np.any(z_sel_fe):
         raise RuntimeError(
-            f"{plotfile}: no FE z cells selected"
+            f"{plotfile}: no cells selected in FE z direction"
         )
 
-    # Shape: (Nx_selected, Nz_selected)
+    # --------------------------------------------------------
+    # Pz -> FE only
+    # --------------------------------------------------------
     P_slice = P[
-        np.ix_(x_sel, [y_index_use], z_sel)
+        np.ix_(
+            x_sel,
+            [y_index_use],
+            z_sel_fe,
+        )
     ][:, 0, :]
 
-    # Use exactly the same x/y/z selection for Phi
-    if Phi is not None:
-        Phi_slice = Phi[
-            np.ix_(x_sel, [y_index_use], z_sel)
-        ][:, 0, :]
-    else:
-        Phi_slice = None
+    # --------------------------------------------------------
+    # Phi -> full device
+    # --------------------------------------------------------
+    Phi_slice = Phi[
+        x_sel,
+        y_index_use,
+        :
+    ]
+
+    # --------------------------------------------------------
+    # charge -> full device
+    # --------------------------------------------------------
+    charge_slice = charge[
+        x_sel,
+        y_index_use,
+        :
+    ]
+
+    # --------------------------------------------------------
+    # Static fields -> full device
+    # --------------------------------------------------------
+    epsilon_slice = None
+    mask_slice = None
+
+    if read_static_fields:
+        epsilon_slice = epsilon[
+            x_sel,
+            y_index_use,
+            :
+        ]
+
+        mask_slice = mask[
+            x_sel,
+            y_index_use,
+            :
+        ]
 
     return {
+        # FE only
         "P_slice": P_slice,
-        "Phi_slice": Phi_slice,
-        "phi_available": Phi_slice is not None,
 
+        # full device
+        "Phi_slice": Phi_slice,
+        "charge_slice": charge_slice,
+
+        # static, full device
+        "epsilon_slice": epsilon_slice,
+        "mask_slice": mask_slice,
+
+        # coordinates
         "x_nm": x_nm[x_sel],
-        "z_nm": z_nm[z_sel],
+        "z_nm": z_nm_full[z_sel_fe],
+        "z_nm_full": z_nm_full,
 
         "y_index": y_index_use,
-        "y_nm": float(y_nm[y_index_use]),
+        "y_nm": float(
+            y_nm[y_index_use]
+        ),
 
         "full_shape": tuple(
-            int(x) for x in P.shape
+            int(v)
+            for v in P.shape
         ),
+
+        # Pz FE
         "slice_shape": tuple(
-            int(x) for x in P_slice.shape
+            int(v)
+            for v in P_slice.shape
+        ),
+
+        # Phi / charge full
+        "full_slice_shape": tuple(
+            int(v)
+            for v in Phi_slice.shape
         ),
     }
+    
+def load_existing_pz_npz(
+    npz_path: Path,
+    folder: Path,
+    run_id: str,
+    pv_df: pd.DataFrame | None,
+):
+    """
+    原始 plotfiles 已不存在，但 NPZ 還存在時，
+    直接利用 NPZ 重建 pz_stack_index。
+    """
+
+    with np.load(
+        npz_path,
+        allow_pickle=False,
+    ) as data:
+
+        if "Pz_stack" not in data.files:
+            raise RuntimeError(
+                f"{run_id}: "
+                f"'Pz_stack' not found in {npz_path}"
+            )
+
+        Pz_stack = data["Pz_stack"]
+
+        if Pz_stack.ndim != 3:
+            raise RuntimeError(
+                f"{run_id}: unexpected "
+                f"Pz_stack shape {Pz_stack.shape}"
+            )
+
+        n_stacks = Pz_stack.shape[0]
+
+        pz_slice_shape = tuple(
+            int(v)
+            for v in Pz_stack.shape[1:]
+        )
+
+        has_phi = (
+            "Phi_stack"
+            in data.files
+        )
+
+        y_index = (
+            int(
+                np.asarray(
+                    data["y_index"]
+                ).item()
+            )
+            if "y_index" in data.files
+            else -1
+        )
+
+        y_nm = (
+            float(
+                np.asarray(
+                    data["y_nm"]
+                ).item()
+            )
+            if "y_nm" in data.files
+            else np.nan
+        )
+
+        # ----------------------------------------------------
+        # NPZ metadata fallback
+        # ----------------------------------------------------
+        V_npz = (
+            np.asarray(
+                data["V_applied"]
+            )
+            if "V_applied" in data.files
+            else None
+        )
+
+        P_mean_npz = (
+            np.asarray(
+                data["P_mean"]
+            )
+            if "P_mean" in data.files
+            else None
+        )
+
+        branch_npz = (
+            np.asarray(
+                data["branch"]
+            ).astype(str)
+            if "branch" in data.files
+            else None
+        )
+
+        index_rows = []
+
+        for i in range(n_stacks):
+
+            # 優先使用目前 CSV 的 metadata
+            if (
+                pv_df is not None
+                and i < len(pv_df)
+            ):
+                pv_row = pv_df.iloc[i]
+
+                point_id = int(
+                    pv_row.get(
+                        "point_id",
+                        i,
+                    )
+                )
+
+                V_applied = pv_row.get(
+                    "V_applied",
+                    np.nan,
+                )
+
+                P_mean = pv_row.get(
+                    "P_mean",
+                    np.nan,
+                )
+
+                branch = pv_row.get(
+                    "branch",
+                    "",
+                )
+
+            else:
+                point_id = i
+
+                V_applied = (
+                    V_npz[i]
+                    if (
+                        V_npz is not None
+                        and i < len(V_npz)
+                    )
+                    else np.nan
+                )
+
+                P_mean = (
+                    P_mean_npz[i]
+                    if (
+                        P_mean_npz is not None
+                        and i < len(P_mean_npz)
+                    )
+                    else np.nan
+                )
+
+                branch = (
+                    branch_npz[i]
+                    if (
+                        branch_npz is not None
+                        and i < len(branch_npz)
+                    )
+                    else "unknown"
+                )
+
+            index_rows.append({
+                "folder": folder.name,
+                "point_id": point_id,
+
+                "branch": branch,
+                "V_applied": V_applied,
+                "P_mean": P_mean,
+
+                "phi_available": has_phi,
+
+                "y_index": y_index,
+                "y_nm": y_nm,
+
+                # NPZ 沒有保存原始 3D full_shape，
+                # 所以不要亂填錯誤資訊。
+                "full_shape": "",
+
+                "slice_shape_Nx_Nz": str(
+                    pz_slice_shape
+                ),
+
+                "npz_path": str(
+                    npz_path
+                ),
+
+                "pz_array_key": "Pz_stack",
+
+                "phi_array_key": (
+                    "Phi_stack"
+                    if has_phi
+                    else ""
+                ),
+
+                "x_nm_key": (
+                    "x_nm"
+                    if "x_nm" in data.files
+                    else ""
+                ),
+
+                # z_nm 永遠代表 Pz 的 FE coordinates
+                "z_nm_key": (
+                    "z_nm"
+                    if "z_nm" in data.files
+                    else ""
+                ),
+            })
+
+    warning = None
+
+    if (
+        pv_df is not None
+        and len(pv_df) != n_stacks
+    ):
+        warning = (
+            f"{run_id}: existing NPZ stacks "
+            f"({n_stacks}) != "
+            f"PV rows ({len(pv_df)})"
+        )
+
+    print(
+        f"[REUSE NPZ] {run_id}: "
+        f"{n_stacks} stacks from "
+        f"{npz_path}"
+    )
+
+    return (
+        index_rows,
+        str(npz_path),
+        warning,
+    )
 
 def extract_pz_stacks(
     folder: Path,
@@ -522,20 +898,38 @@ def extract_pz_stacks(
     skip_initial=True,
     skip_first_n=9,
 ):
-    try:
-        import yt
-    except Exception as e:
-        raise RuntimeError(
-            "yt is required for Pz/Phi extraction. "
-            "Install with: pip install yt"
-        ) from e
+    # --------------------------------------------------------
+    # Output NPZ path
+    # --------------------------------------------------------
+    out_folder = (
+        pz_dir
+        / run_id
+    )
 
-    plot_dir = folder / "plts"
+    out_folder.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    out_npz = (
+        out_folder
+        / "Pz_Phi_FE_all_voltage.npz"
+    )
+
+    # --------------------------------------------------------
+    # Find plotfiles
+    # --------------------------------------------------------
+    plot_dir = (
+        folder
+        / "plts"
+    )
 
     if not plot_dir.exists():
         plot_dir = folder
 
-    plot_names = find_plot_names(plot_dir)
+    plot_names = find_plot_names(
+        plot_dir
+    )
 
     if skip_initial:
         plot_names = [
@@ -545,91 +939,205 @@ def extract_pz_stacks(
         ]
 
     if skip_first_n > 0:
-        plot_names = plot_names[skip_first_n:]
+        plot_names = (
+            plot_names[
+                skip_first_n:
+            ]
+        )
 
+    # --------------------------------------------------------
+    # No plotfiles:
+    # reuse existing NPZ if available
+    # --------------------------------------------------------
     if not plot_names:
+
+        if out_npz.exists():
+            return load_existing_pz_npz(
+                npz_path=out_npz,
+                folder=folder,
+                run_id=run_id,
+                pv_df=pv_df,
+            )
+
         return (
             [],
             None,
-            f"{run_id}: no steady plotfiles found after filtering",
+            (
+                f"{run_id}: no steady plotfiles "
+                "found after filtering and "
+                "no existing NPZ found"
+            ),
         )
 
-    out_folder = pz_dir / run_id
-    out_folder.mkdir(
-        parents=True,
-        exist_ok=True
-    )
+    # --------------------------------------------------------
+    # Only import yt when plotfiles actually need reading
+    # --------------------------------------------------------
+    try:
+        import yt
 
-    # 可以保留舊檔名；內容現在同時包含 Pz 和 Phi
-    out_npz = out_folder / "Pz_Phi_FE_all_voltage.npz"
+    except Exception as e:
+        raise RuntimeError(
+            "yt is required for field extraction. "
+            "Install with: pip install yt"
+        ) from e
 
+    # --------------------------------------------------------
+    # Storage
+    # --------------------------------------------------------
     index_rows = []
 
     pz_slices = []
     phi_slices = []
-    phi_available_list = []
+    charge_slices = []
 
+    # Static fields: only one copy
+    epsilon_static = None
+    mask_static = None
+
+    plot_steps = []
+
+    # References
     x_nm_ref = None
     z_nm_ref = None
-    slice_shape_ref = None
+    z_nm_full_ref = None
 
-    for i, name in enumerate(plot_names):
-        plotfile = plot_dir / name
+    pz_shape_ref = None
+    full_slice_shape_ref = None
+
+    full_shape_ref = None
+    y_index_ref = None
+    y_nm_ref = None
+
+    # --------------------------------------------------------
+    # Read plotfiles
+    # --------------------------------------------------------
+    for i, name in enumerate(
+        plot_names
+    ):
+        plotfile = (
+            plot_dir
+            / name
+        )
 
         info = read_one_plot(
             plotfile,
             params=params,
             yt_module=yt,
             y_index=y_index,
+
+            # epsilon/mask only first bias
+            read_static_fields=(
+                i == 0
+            ),
         )
 
+        # ----------------------------------------------------
+        # Dynamic fields
+        # ----------------------------------------------------
         P_slice = np.asarray(
             info["P_slice"],
-            dtype=np.float32
+            dtype=np.float32,
         )
 
-        Phi_slice = info["Phi_slice"]
-        phi_available = Phi_slice is not None
+        Phi_slice = np.asarray(
+            info["Phi_slice"],
+            dtype=np.float32,
+        )
 
-        # 若這個 plotfile 沒有 Phi，就填入相同 shape 的 NaN。
-        # 這樣 Phi_stack 仍能維持固定的 3D shape。
-        if Phi_slice is None:
-            Phi_slice = np.full(
-                P_slice.shape,
-                np.nan,
-                dtype=np.float32
-            )
-        else:
-            Phi_slice = np.asarray(
-                Phi_slice,
-                dtype=np.float32
-            )
+        charge_slice = np.asarray(
+            info["charge_slice"],
+            dtype=np.float32,
+        )
 
-        if Phi_slice.shape != P_slice.shape:
+        if (
+            Phi_slice.shape
+            != charge_slice.shape
+        ):
             raise RuntimeError(
-                f"{plotfile}: P_slice shape {P_slice.shape} "
-                f"does not match Phi_slice shape {Phi_slice.shape}"
+                f"{plotfile}: "
+                f"Phi shape {Phi_slice.shape} "
+                f"!= charge shape "
+                f"{charge_slice.shape}"
             )
 
-        # First plotfile defines the reference coordinates and shape
+        # ----------------------------------------------------
+        # First plotfile defines references
+        # ----------------------------------------------------
         if x_nm_ref is None:
+
             x_nm_ref = np.asarray(
                 info["x_nm"],
-                dtype=np.float64
+                dtype=np.float32,
             )
 
+            # FE z coordinates
             z_nm_ref = np.asarray(
                 info["z_nm"],
-                dtype=np.float64
+                dtype=np.float32,
             )
 
-            slice_shape_ref = P_slice.shape
+            # Full-device z coordinates
+            z_nm_full_ref = np.asarray(
+                info["z_nm_full"],
+                dtype=np.float32,
+            )
+
+            pz_shape_ref = (
+                P_slice.shape
+            )
+
+            full_slice_shape_ref = (
+                Phi_slice.shape
+            )
+
+            full_shape_ref = (
+                info["full_shape"]
+            )
+
+            y_index_ref = int(
+                info["y_index"]
+            )
+
+            y_nm_ref = float(
+                info["y_nm"]
+            )
+
+            epsilon_static = np.asarray(
+                info["epsilon_slice"],
+                dtype=np.float32,
+            )
+
+            mask_static = np.asarray(
+                info["mask_slice"],
+                dtype=np.float32,
+            )
 
         else:
-            if P_slice.shape != slice_shape_ref:
+            # ------------------------------------------------
+            # Consistency checks
+            # ------------------------------------------------
+            if (
+                P_slice.shape
+                != pz_shape_ref
+            ):
                 raise RuntimeError(
-                    f"{plotfile}: slice shape {P_slice.shape} "
-                    f"does not match reference shape {slice_shape_ref}"
+                    f"{plotfile}: "
+                    f"Pz FE slice shape "
+                    f"{P_slice.shape} "
+                    f"does not match reference "
+                    f"{pz_shape_ref}"
+                )
+
+            if (
+                Phi_slice.shape
+                != full_slice_shape_ref
+            ):
+                raise RuntimeError(
+                    f"{plotfile}: "
+                    f"full-device slice shape "
+                    f"{Phi_slice.shape} "
+                    f"does not match reference "
+                    f"{full_slice_shape_ref}"
                 )
 
             if not np.allclose(
@@ -639,7 +1147,8 @@ def extract_pz_stacks(
                 atol=1e-10,
             ):
                 raise RuntimeError(
-                    f"{plotfile}: x coordinates do not match "
+                    f"{plotfile}: "
+                    "x coordinates do not match "
                     "the first selected plotfile"
                 )
 
@@ -650,134 +1159,314 @@ def extract_pz_stacks(
                 atol=1e-10,
             ):
                 raise RuntimeError(
-                    f"{plotfile}: z coordinates do not match "
+                    f"{plotfile}: "
+                    "FE z coordinates do not match "
                     "the first selected plotfile"
                 )
 
-        pz_slices.append(P_slice)
-        phi_slices.append(Phi_slice)
-        phi_available_list.append(phi_available)
+            if not np.allclose(
+                info["z_nm_full"],
+                z_nm_full_ref,
+                rtol=0.0,
+                atol=1e-10,
+            ):
+                raise RuntimeError(
+                    f"{plotfile}: "
+                    "full z coordinates do not match "
+                    "the first selected plotfile"
+                )
 
-        if pv_df is not None and i < len(pv_df):
+        # ----------------------------------------------------
+        # Append fields
+        # ----------------------------------------------------
+        pz_slices.append(
+            P_slice
+        )
+
+        phi_slices.append(
+            Phi_slice
+        )
+
+        charge_slices.append(
+            charge_slice
+        )
+
+        plot_step = get_step_from_name(
+            name
+        )
+
+        plot_steps.append(
+            plot_step
+        )
+
+        # ----------------------------------------------------
+        # P-V metadata
+        # ----------------------------------------------------
+        if (
+            pv_df is not None
+            and i < len(pv_df)
+        ):
             pv_row = pv_df.iloc[i]
 
             V_applied = pv_row.get(
                 "V_applied",
-                np.nan
+                np.nan,
             )
+
             P_mean_csv = pv_row.get(
                 "P_mean",
-                np.nan
+                np.nan,
             )
+
             branch = pv_row.get(
                 "branch",
-                ""
+                "",
             )
+
             point_id = int(
-                pv_row.get("point_id", i)
+                pv_row.get(
+                    "point_id",
+                    i,
+                )
             )
+
         else:
             V_applied = np.nan
             P_mean_csv = np.nan
             branch = "unknown"
             point_id = i
 
+        # ----------------------------------------------------
+        # Excel index row
+        # 保持原本 schema 不變
+        # ----------------------------------------------------
         index_rows.append({
             "folder": folder.name,
             "point_id": point_id,
 
-            # 第幾張 Pz_stack / Phi_stack
             "branch": branch,
             "V_applied": V_applied,
             "P_mean": P_mean_csv,
 
-            "phi_available": phi_available,
+            "phi_available": True,
 
-            "y_index": info["y_index"],
-            "y_nm": info["y_nm"],
+            "y_index": info[
+                "y_index"
+            ],
+
+            "y_nm": info[
+                "y_nm"
+            ],
 
             "full_shape": str(
                 info["full_shape"]
             ),
+
+            # 這裡仍代表 Pz FE shape
             "slice_shape_Nx_Nz": str(
                 info["slice_shape"]
             ),
 
-            "npz_path": str(out_npz),
+            "npz_path": str(
+                out_npz
+            ),
 
-            # NPZ 中的 array 名稱
-            "pz_array_key": "Pz_stack",
-            "phi_array_key": "Phi_stack",
-            "x_nm_key": "x_nm",
-            "z_nm_key": "z_nm",
+            "pz_array_key": (
+                "Pz_stack"
+            ),
+
+            "phi_array_key": (
+                "Phi_stack"
+            ),
+
+            "x_nm_key": (
+                "x_nm"
+            ),
+
+            # FE z coordinate
+            "z_nm_key": (
+                "z_nm"
+            ),
         })
 
-    # Combine all voltage points
+    # --------------------------------------------------------
+    # Stack all bias points
+    # --------------------------------------------------------
+
+    # (N_voltage, Nx, Nz_FE)
     Pz_stack = np.stack(
         pz_slices,
-        axis=0
-    ).astype(np.float32)
+        axis=0,
+    ).astype(
+        np.float32
+    )
 
+    # (N_voltage, Nx, Nz_full)
     Phi_stack = np.stack(
         phi_slices,
-        axis=0
-    ).astype(np.float32)
+        axis=0,
+    ).astype(
+        np.float32
+    )
 
+    # (N_voltage, Nx, Nz_full)
+    charge_stack = np.stack(
+        charge_slices,
+        axis=0,
+    ).astype(
+        np.float32
+    )
+
+    # --------------------------------------------------------
+    # Metadata arrays
+    # --------------------------------------------------------
     V_applied_array = np.asarray(
-        [row["V_applied"] for row in index_rows],
-        dtype=np.float64
+        [
+            row["V_applied"]
+            for row in index_rows
+        ],
+        dtype=np.float32,
     )
 
     P_mean_array = np.asarray(
-        [row["P_mean"] for row in index_rows],
-        dtype=np.float64
+        [
+            row["P_mean"]
+            for row in index_rows
+        ],
+        dtype=np.float32,
     )
 
     branch_array = np.asarray(
-        [row["branch"] for row in index_rows],
-        dtype=str
+        [
+            row["branch"]
+            for row in index_rows
+        ],
+        dtype=str,
     )
 
-    phi_available_array = np.asarray(
-        phi_available_list,
-        dtype=bool
+    plot_step_array = np.asarray(
+        [
+            (
+                step
+                if step is not None
+                else -1
+            )
+            for step in plot_steps
+        ],
+        dtype=np.int64,
     )
 
-    # Pz、Phi、座標和 voltage metadata 存在同一個 NPZ
+    # --------------------------------------------------------
+    # Save exactly the same NPZ structure
+    # as the updated notebook version
+    # --------------------------------------------------------
     np.savez_compressed(
         out_npz,
 
+        # FE only
         Pz_stack=Pz_stack,
-        Phi_stack=Phi_stack,
 
+        # full device
+        Phi_stack=Phi_stack,
+        charge_stack=charge_stack,
+
+        # static, one copy only
+        epsilon_static=epsilon_static,
+        mask_static=mask_static,
+
+        # coordinates
         x_nm=x_nm_ref,
+
+        # FE z
         z_nm=z_nm_ref,
 
+        # full-device z
+        z_nm_full=z_nm_full_ref,
+
+        # sweep metadata
         V_applied=V_applied_array,
         P_mean=P_mean_array,
         branch=branch_array,
-
-        phi_available=phi_available_array,
+        plot_step=plot_step_array,
 
         y_index=np.asarray(
-            index_rows[0]["y_index"],
-            dtype=np.int64
+            y_index_ref,
+            dtype=np.int64,
         ),
+
         y_nm=np.asarray(
-            index_rows[0]["y_nm"],
-            dtype=np.float64
+            y_nm_ref,
+            dtype=np.float32,
         ),
     )
 
+    # --------------------------------------------------------
+    # Report NPZ size
+    # --------------------------------------------------------
+    size_bytes = (
+        out_npz.stat().st_size
+    )
+
+    size_kib = (
+        size_bytes
+        / 1024
+    )
+
+    print(
+        f"Saved NPZ: {out_npz}"
+    )
+
+    print(
+        "Pz_stack shape       :",
+        Pz_stack.shape,
+    )
+
+    print(
+        "Phi_stack shape      :",
+        Phi_stack.shape,
+    )
+
+    print(
+        "charge_stack shape   :",
+        charge_stack.shape,
+    )
+
+    print(
+        "epsilon_static shape :",
+        epsilon_static.shape,
+    )
+
+    print(
+        "mask_static shape    :",
+        mask_static.shape,
+    )
+
+    print(
+        f"NPZ size             : "
+        f"{size_kib:.2f} KiB"
+    )
+
+    # --------------------------------------------------------
+    # Warning
+    # --------------------------------------------------------
     warning = None
 
-    if pv_df is not None and len(pv_df) != len(plot_names):
+    if (
+        pv_df is not None
+        and len(pv_df) != len(plot_names)
+    ):
         warning = (
-            f"{run_id}: PV rows ({len(pv_df)}) "
-            f"!= selected plotfiles ({len(plot_names)})"
+            f"{run_id}: "
+            f"PV rows ({len(pv_df)}) "
+            f"!= selected plotfiles "
+            f"({len(plot_names)})"
         )
 
-    return index_rows, str(out_npz), warning
+    return (
+        index_rows,
+        str(out_npz),
+        warning,
+    )
 
 # ==========================
 # Excel writing

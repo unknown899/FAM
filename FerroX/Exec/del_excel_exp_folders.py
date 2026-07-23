@@ -34,9 +34,9 @@ def should_delete(folder_value) -> bool:
     folder = str(folder_value).strip()
 
     # 條件 1
-    if folder == "MFIS_t_8_nomi_31":
+    if folder == "MFIS_t_8_nomi_33":
         return True
-
+    '''
     # 條件 2：
     # MFIS_t_7_nomi_(指定正整數)
     match = re.fullmatch(r"MFIS_t_7_nomi_(\d+)", folder)
@@ -60,6 +60,7 @@ def should_delete(folder_value) -> bool:
         return True
 
     return False
+    '''
 
 
 # ==========================
