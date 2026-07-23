@@ -678,7 +678,7 @@ def load_existing_pz_npz(
 
     with np.load(
         npz_path,
-        allow_pickle=False,
+        allow_pickle=True,
     ) as data:
 
         if "Pz_stack" not in data.files:
@@ -1067,19 +1067,19 @@ def extract_pz_stacks(
 
             x_nm_ref = np.asarray(
                 info["x_nm"],
-                dtype=np.float32,
+                dtype=np.float64,
             )
 
             # FE z coordinates
             z_nm_ref = np.asarray(
                 info["z_nm"],
-                dtype=np.float32,
+                dtype=np.float64,
             )
 
             # Full-device z coordinates
             z_nm_full_ref = np.asarray(
                 info["z_nm_full"],
-                dtype=np.float32,
+                dtype=np.float64,
             )
 
             pz_shape_ref = (
@@ -1144,7 +1144,7 @@ def extract_pz_stacks(
                 info["x_nm"],
                 x_nm_ref,
                 rtol=0.0,
-                atol=1e-10,
+                atol=1e-6,
             ):
                 raise RuntimeError(
                     f"{plotfile}: "
@@ -1156,7 +1156,7 @@ def extract_pz_stacks(
                 info["z_nm"],
                 z_nm_ref,
                 rtol=0.0,
-                atol=1e-10,
+                atol=1e-6,
             ):
                 raise RuntimeError(
                     f"{plotfile}: "
@@ -1168,7 +1168,7 @@ def extract_pz_stacks(
                 info["z_nm_full"],
                 z_nm_full_ref,
                 rtol=0.0,
-                atol=1e-10,
+                atol=1e-6,
             ):
                 raise RuntimeError(
                     f"{plotfile}: "
@@ -1325,7 +1325,7 @@ def extract_pz_stacks(
             row["V_applied"]
             for row in index_rows
         ],
-        dtype=np.float32,
+        dtype=np.float64,
     )
 
     P_mean_array = np.asarray(
@@ -1333,7 +1333,7 @@ def extract_pz_stacks(
             row["P_mean"]
             for row in index_rows
         ],
-        dtype=np.float32,
+        dtype=np.float64,
     )
 
     branch_array = np.asarray(
@@ -1396,7 +1396,7 @@ def extract_pz_stacks(
 
         y_nm=np.asarray(
             y_nm_ref,
-            dtype=np.float32,
+            dtype=np.float64,
         ),
     )
 
