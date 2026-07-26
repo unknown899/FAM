@@ -272,6 +272,73 @@ def lhs_unit(n_samples: int, dimensions: int, rng: np.random.Generator) -> np.nd
         points[:, dimension] = values
     return points
 
+def symmetric_gamma_factors(
+    count: int,
+    step_ratio: float,
+) -> list[float]:
+    """
+    Generate log-symmetric gamma multipliers around nominal gamma.
+
+    The nominal multiplier 1.0 is not included because the nominal
+    simulation normally already exists.
+
+    Example:
+        count = 4
+        step_ratio = 1.3
+
+        factors:
+        [
+            1 / 1.3**2,
+            1 / 1.3,
+            1.3,
+            1.3**2,
+        ]
+    """
+
+    if count <= 0:
+        raise ValueError(
+            "count must be positive"
+        )
+
+    if count % 2 != 0:
+        raise ValueError(
+            "For gamma-sweep, --count must be even "
+            "because the nominal case already exists and "
+            "the new cases are placed symmetrically below "
+            "and above nominal gamma."
+        )
+
+    if step_ratio <= 1.0:
+        raise ValueError(
+            "--gamma-step-ratio must be greater than 1.0"
+        )
+
+    half_count = count // 2
+
+    # 由最小 gamma 排到 nominal 下方
+    lower_factors = [
+        step_ratio ** (-power)
+        for power in range(
+            half_count,
+            0,
+            -1,
+        )
+    ]
+
+    # 由 nominal 上方排到最大 gamma
+    upper_factors = [
+        step_ratio ** power
+        for power in range(
+            1,
+            half_count + 1,
+        )
+    ]
+
+    return (
+        lower_factors
+        + upper_factors
+    )
+
 
 def make_candidate(
     nominal: dict[str, float],
@@ -391,6 +458,7 @@ def generate_candidates(
     fixed_values: dict[str, float],
     ps_ratio: tuple[float, float] | None,
     ec_ratio: tuple[float, float] | None,
+    gamma_step_ratio: float,
 ) -> list[Candidate]:
     if count <= 0:
         raise ValueError("count must be positive")
@@ -419,7 +487,54 @@ def generate_candidates(
         accepted.append(candidate)
         accepted_keys.add(key)
         return True
+    
+    # ========================================================
+    # Gamma-only symmetric sweep
+    # ========================================================
 
+    if design == "gamma-sweep":
+
+        gamma_factors = symmetric_gamma_factors(
+            count=count,
+            step_ratio=gamma_step_ratio,
+        )
+
+        print(
+            "Gamma sweep factors:",
+            [
+                f"{factor:.8g}"
+                for factor in gamma_factors
+            ],
+        )
+
+        for gamma_factor in gamma_factors:
+
+            # alpha、beta 與其他 PARAMETERS
+            # 全部保持 nominal
+            factors = {
+                key: 1.0
+                for key in PARAMETERS
+            }
+
+            # 只改 gamma
+            factors["gamma"] = gamma_factor
+
+            candidate = make_candidate(
+                nominal,
+                factors,
+                design="gamma-sweep",
+            )
+
+            if not try_add(candidate):
+                raise RuntimeError(
+                    "Gamma-sweep candidate was rejected: "
+                    f"gamma_factor={gamma_factor:.8g}. "
+                    "The candidate may already exist or may "
+                    "fail the optional Ps/Ec screening."
+                )
+
+        return accepted
+    
     if design == "hybrid":
         for candidate in one_at_a_time_candidates(nominal):
             if len(accepted) >= count:
@@ -935,10 +1050,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--template-folder",
-        default="MFIS_t_8_nomi_33",
+        nargs="+",
+        required=True,
         help=(
-            "Folder supplying inputs and the notebook. Choose a template with "
-            "the correct geometry/thickness for the new batch."
+            "One or more nominal template folders. "
+            "When multiple folders are supplied, --prefix is appended "
+            "to each template-folder name."
         ),
     )
     parser.add_argument(
@@ -976,7 +1093,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=20260712)
     parser.add_argument(
         "--design",
-        choices=("lhs", "hybrid"),
+        choices=("lhs", "hybrid", "gamma-sweep"),
         default="hybrid",
         help="hybrid adds six one-at-a-time endpoints before LHS samples.",
     )
@@ -1045,118 +1162,344 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Maximum concurrent simulations; default is the GPU count.",
     )
+    parser.add_argument(
+        "--gamma-step-ratio",
+        type=float,
+        default=1.3,
+        help=(
+            "Adjacent multiplicative spacing for "
+            "--design gamma-sweep. "
+            "For example, 1.3 generates gamma levels "
+            "separated by a factor of 1.3."
+        ),
+    )
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
+
     exec_dir = args.exec_dir.expanduser().resolve()
     dataset_path = args.dataset.expanduser().resolve()
 
     if not exec_dir.is_dir():
-        raise FileNotFoundError(f"Exec directory not found: {exec_dir}")
-
-    t_fe_m = (
-        args.t_fe_nm * 1e-9
-        if args.t_fe_nm is not None
-        else infer_t_fe_m(args.prefix)
-    )
-    if t_fe_m is None:
-        raise ValueError(
-            "Cannot infer t_FE from prefix. Supply --t-fe-nm explicitly."
+        raise FileNotFoundError(
+            f"Exec directory not found: {exec_dir}"
         )
 
-    template_inputs = exec_dir / args.template_folder / "inputs"
-    if not template_inputs.is_file():
-        raise FileNotFoundError(f"Template inputs not found: {template_inputs}")
-    template_text = template_inputs.read_text(encoding="utf-8")
-    nominal = {
-        key: rounded_parameter(read_scalar_parameter(template_text, key))
-        for key in PARAMETERS
-    }
-    fixed_values: dict[str, float] = {}
-    for key in OPTIONAL_FIXED_DUPLICATE_KEYS:
-        try:
-            fixed_values[key] = rounded_parameter(read_scalar_parameter(template_text, key))
-        except ValueError:
-            pass
+    template_folders: list[str] = args.template_folder
 
-    print(f"Exec directory: {exec_dir}")
-    print(f"Inputs template folder: {args.template_folder}")
-    print(
-        "Notebook template folder: "
-        f"{args.notebook_template_folder or args.template_folder}"
-    )
-    print(f"Nominal parameters: {nominal}")
-    print(f"Fixed parameters used for duplicate checking: {fixed_values}")
-    print(f"Duplicate-check thickness: {t_fe_m:.6e} m")
-
+    # Excel 只需要讀一次
     existing_records = load_existing_parameter_sets(
         dataset_path,
         args.dataset_sheet,
     )
-    print(f"Loaded {len(existing_records)} existing experiment rows")
 
-    candidates = generate_candidates(
-        count=args.count,
-        nominal=nominal,
-        existing_records=existing_records,
-        t_fe_m=t_fe_m,
-        seed=args.seed,
-        design=args.design,
-        fixed_values=fixed_values,
-        ps_ratio=ratio_argument(args.ps_ratio),
-        ec_ratio=ratio_argument(args.ec_ratio),
+    print(
+        f"Loaded {len(existing_records)} "
+        "existing experiment rows"
     )
 
-    final_index = args.start_index + len(candidates) - 1
-    safe_prefix = re.sub(r"[^A-Za-z0-9_.-]+", "_", args.prefix)
-    plan_csv = exec_dir / f"batch_plan_{safe_prefix}_{args.start_index}_{final_index}.csv"
-    status_csv = exec_dir / f"batch_status_{safe_prefix}_{args.start_index}_{final_index}.csv"
+    all_prepared: list[tuple[Path, Candidate]] = []
 
-    clean_prefix = args.prefix.rstrip("_")
-    planned_cases = [
-        (exec_dir / f"{clean_prefix}_{args.start_index + offset}", candidate)
-        for offset, candidate in enumerate(candidates)
-    ]
-    write_plan_csv(
-        plan_csv,
-        planned_cases,
-        nominal,
-        args.seed,
-    )
-    print(f"Plan file: {plan_csv}")
-    for folder, candidate in planned_cases:
+    # --------------------------------------------------------
+    # Process each nominal template folder
+    # --------------------------------------------------------
+
+    for template_number, template_folder in enumerate(
+        template_folders,
+        start=1,
+    ):
+        print()
+        print("=" * 70)
         print(
-            f"  {folder.name}: alpha={candidate.alpha:.6e}, "
-            f"beta={candidate.beta:.6e}, gamma={candidate.gamma:.6e}, "
-            f"design={candidate.design}"
+            f"Nominal template "
+            f"{template_number}/{len(template_folders)}: "
+            f"{template_folder}"
+        )
+        print("=" * 70)
+
+        # ----------------------------------------------------
+        # Output prefix
+        #
+        # 單一 template：
+        #   保持原本 --prefix 的完整意義
+        #
+        # 多個 templates：
+        #   把 --prefix 當 suffix
+        #
+        # Example:
+        #   template_folder = MFIS_t_8_nomi_29
+        #   args.prefix     = gamma
+        #
+        #   case_prefix =
+        #   MFIS_t_8_nomi_29_gamma
+        # ----------------------------------------------------
+
+        if len(template_folders) == 1:
+            case_prefix = args.prefix
+        else:
+            clean_template = template_folder.rstrip("_")
+            clean_suffix = args.prefix.strip("_")
+
+            case_prefix = (
+                f"{clean_template}_{clean_suffix}"
+                if clean_suffix
+                else clean_template
+            )
+
+        # ----------------------------------------------------
+        # Determine t_FE for this nominal
+        # ----------------------------------------------------
+
+        t_fe_m = (
+            args.t_fe_nm * 1e-9
+            if args.t_fe_nm is not None
+            else infer_t_fe_m(template_folder)
         )
 
+        if t_fe_m is None:
+            raise ValueError(
+                "Cannot infer t_FE from template folder "
+                f"{template_folder!r}. "
+                "Supply --t-fe-nm explicitly."
+            )
+
+        # ----------------------------------------------------
+        # Read this nominal inputs file
+        # ----------------------------------------------------
+
+        template_inputs = (
+            exec_dir
+            / template_folder
+            / "inputs"
+        )
+
+        if not template_inputs.is_file():
+            raise FileNotFoundError(
+                "Template inputs not found: "
+                f"{template_inputs}"
+            )
+
+        template_text = template_inputs.read_text(
+            encoding="utf-8"
+        )
+
+        nominal = {
+            key: rounded_parameter(
+                read_scalar_parameter(
+                    template_text,
+                    key,
+                )
+            )
+            for key in PARAMETERS
+        }
+
+        fixed_values: dict[str, float] = {}
+
+        for key in OPTIONAL_FIXED_DUPLICATE_KEYS:
+            try:
+                fixed_values[key] = rounded_parameter(
+                    read_scalar_parameter(
+                        template_text,
+                        key,
+                    )
+                )
+            except ValueError:
+                pass
+
+        print(f"Exec directory: {exec_dir}")
+        print(
+            f"Inputs template folder: "
+            f"{template_folder}"
+        )
+
+        print(
+            "Notebook template folder: "
+            f"{args.notebook_template_folder or template_folder}"
+        )
+
+        print(f"Output prefix: {case_prefix}")
+        print(f"Nominal parameters: {nominal}")
+
+        print(
+            "Fixed parameters used for duplicate checking: "
+            f"{fixed_values}"
+        )
+
+        print(
+            "Duplicate-check thickness: "
+            f"{t_fe_m:.6e} m"
+        )
+
+        # ----------------------------------------------------
+        # Generate candidates around this nominal
+        # ----------------------------------------------------
+
+        candidates = generate_candidates(
+            count=args.count,
+            nominal=nominal,
+            existing_records=existing_records,
+            t_fe_m=t_fe_m,
+            seed=args.seed,
+            design=args.design,
+            fixed_values=fixed_values,
+            ps_ratio=args.ps_ratio,
+            ec_ratio=args.ec_ratio,
+            gamma_step_ratio=args.gamma_step_ratio,
+        )
+
+        final_index = (
+            args.start_index
+            + len(candidates)
+            - 1
+        )
+
+        safe_prefix = re.sub(
+            r"[^A-Za-z0-9_.-]+",
+            "_",
+            case_prefix,
+        )
+
+        plan_csv = (
+            exec_dir
+            / (
+                f"batch_plan_{safe_prefix}_"
+                f"{args.start_index}_{final_index}.csv"
+            )
+        )
+
+        clean_prefix = case_prefix.rstrip("_")
+
+        planned_cases = [
+            (
+                exec_dir
+                / (
+                    f"{clean_prefix}_"
+                    f"{args.start_index + offset}"
+                ),
+                candidate,
+            )
+            for offset, candidate
+            in enumerate(candidates)
+        ]
+
+        write_plan_csv(
+            plan_csv,
+            planned_cases,
+            nominal,
+            args.seed,
+        )
+
+        print(f"Plan file: {plan_csv}")
+
+        for folder, candidate in planned_cases:
+            print(
+                f"  {folder.name}: "
+                f"alpha={candidate.alpha:.6e}, "
+                f"beta={candidate.beta:.6e}, "
+                f"gamma={candidate.gamma:.6e}, "
+                f"design={candidate.design}"
+            )
+
+        # ----------------------------------------------------
+        # Add candidates to in-memory duplicate records
+        #
+        # 這些 cases 尚未寫入 Excel，但下一個 nominal
+        # 也應將它們視為已存在，避免同一次 batch 產生重複參數。
+        # ----------------------------------------------------
+
+        for candidate in candidates:
+            planned_record = {
+                "alpha": candidate.alpha,
+                "beta": candidate.beta,
+                "gamma": candidate.gamma,
+                "t_fe": t_fe_m,
+            }
+
+            planned_record.update(
+                {
+                    key.lower(): value
+                    for key, value
+                    in fixed_values.items()
+                }
+            )
+
+            existing_records.append(
+                planned_record
+            )
+
+        if args.dry_run:
+            continue
+
+        # ----------------------------------------------------
+        # Prepare folders for this nominal
+        # ----------------------------------------------------
+
+        prepared = prepare_cases(
+            exec_dir=exec_dir,
+            template_folder=template_folder,
+            notebook_template_folder=(
+                args.notebook_template_folder
+            ),
+            prefix=case_prefix,
+            start_index=args.start_index,
+            candidates=candidates,
+            notebook_name=args.notebook_name,
+            source_notebook_name=(
+                args.source_notebook_name
+            ),
+            allow_existing_empty=(
+                args.allow_existing_empty
+            ),
+        )
+
+        print(
+            f"Prepared {len(prepared)} cases "
+            f"from {template_folder}"
+        )
+
+        all_prepared.extend(prepared)
+
+    # --------------------------------------------------------
+    # Finished all nominal folders
+    # --------------------------------------------------------
+
     if args.dry_run:
-        print("Dry run complete: no folders were created and no jobs were launched.")
+        print()
+        print(
+            "Dry run complete: no folders were created "
+            "and no jobs were launched."
+        )
         return 0
 
-    prepared = prepare_cases(
-        exec_dir=exec_dir,
-        template_folder=args.template_folder,
-        notebook_template_folder=args.notebook_template_folder,
-        prefix=args.prefix,
-        start_index=args.start_index,
-        candidates=candidates,
-        notebook_name=args.notebook_name,
-        source_notebook_name=args.source_notebook_name,
-        allow_existing_empty=args.allow_existing_empty,
+    print()
+    print(
+        f"Prepared {len(all_prepared)} total cases "
+        f"from {len(template_folders)} nominal folders."
     )
-    print(f"Prepared {len(prepared)} cases")
 
     if not args.launch:
-        print("Preparation complete; simulations were not launched.")
+        print(
+            "Preparation complete; simulations were not launched."
+        )
         return 0
+
+    # 所有 nominal folders 共用一份 status CSV
+    status_csv = (
+        exec_dir
+        / (
+            f"batch_status_multi_"
+            f"n{len(template_folders)}_"
+            f"seed{args.seed}.csv"
+        )
+    )
+
+    print(f"Combined status file: {status_csv}")
 
     run_batch(
         exec_dir=exec_dir,
-        prepared_cases=prepared,
+        prepared_cases=all_prepared,
         executable_name=args.executable,
         notebook_name=args.notebook_name,
         execute_notebook_after=args.execute_notebook,
@@ -1166,6 +1509,7 @@ def main() -> int:
         max_parallel=args.max_parallel,
         status_csv=status_csv,
     )
+
     return 0
 
 
