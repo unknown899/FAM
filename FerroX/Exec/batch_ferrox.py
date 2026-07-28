@@ -526,13 +526,13 @@ def generate_candidates(
             )
 
             if not try_add(candidate):
-                raise RuntimeError(
-                    "Gamma-sweep candidate was rejected: "
-                    f"gamma_factor={gamma_factor:.8g}. "
-                    "The candidate may already exist or may "
-                    "fail the optional Ps/Ec screening."
-                )
-
+              print(
+                  "[WARNING] Gamma-sweep candidate was rejected: "
+                  f"gamma_factor={gamma_factor:.8g}. "
+                  "The candidate may already exist or may "
+                  "fail the optional Ps/Ec screening."
+              )
+              continue
         return accepted
     
     if design == "hybrid":
