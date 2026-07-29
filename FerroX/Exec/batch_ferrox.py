@@ -324,7 +324,7 @@ def symmetric_gamma_factors(
             -1,
         )
     ]
-
+    lower_factors.append(1)
     # 由 nominal 上方排到最大 gamma
     upper_factors = [
         step_ratio ** power
@@ -1076,7 +1076,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="analyze.ipynb",
         help="Notebook filename created inside every new case.",
     )
-    parser.add_argument("--prefix", required=True, help="For example MFIS_t_7_nomi")
+    parser.add_argument(
+        "--prefix",
+        default="",
+        help="Folder name prefix, for example MFIS_t_7_nomi. Default: empty string.",
+    )
     parser.add_argument(
         "--start-index",
         required=True,
