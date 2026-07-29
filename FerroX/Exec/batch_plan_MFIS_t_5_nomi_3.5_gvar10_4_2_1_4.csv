@@ -1,0 +1,5 @@
+folder,design,seed,alpha,beta,gamma,alpha_change_percent,beta_change_percent,gamma_change_percent,landau_ps_estimate,landau_ec_estimate
+MFIS_t_5_nomi_3.5_gvar10_4_2_t1,gamma-sweep,80093689,-7.40E+09,1.40E+12,5.00E+12,0,0,-99,0.072038402,206433772.8
+MFIS_t_5_nomi_3.5_gvar10_4_2_t2,gamma-sweep,80093689,-7.40E+09,1.40E+12,5.00E+13,0,0,-90,0.067433204,201281997.8
+MFIS_t_5_nomi_3.5_gvar10_4_2_t3,gamma-sweep,80093689,-7.40E+09,1.40E+12,5.00E+15,0,0,900,0.032932986,122221977.3
+MFIS_t_5_nomi_3.5_gvar10_4_2_t4,gamma-sweep,80093689,-7.40E+09,1.40E+12,5.00E+16,0,0,9900,0.019260383,74604118.24
