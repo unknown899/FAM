@@ -272,74 +272,51 @@ def lhs_unit(n_samples: int, dimensions: int, rng: np.random.Generator) -> np.nd
         points[:, dimension] = values
     return points
 
-def symmetric_gamma_factors(
+def parameter_sweep_factors(
     count: int,
     step_ratio: float,
+    mode: str = "center",
 ) -> list[float]:
-    """
-    Generate log-symmetric gamma multipliers around nominal gamma.
-
-    The nominal multiplier 1.0 is not included because the nominal
-    simulation normally already exists.
-
-    Example:
-        count = 4
-        step_ratio = 1.3
-
-        factors:
-        [
-            1 / 1.3**2,
-            1 / 1.3,
-            1.3,
-            1.3**2,
-        ]
-    """
 
     if count <= 0:
-        raise ValueError(
-            "count must be positive"
-        )
-
-    if count % 2 != 0:
-        raise ValueError(
-            "For gamma-sweep, --count must be even "
-            "because the nominal case already exists and "
-            "the new cases are placed symmetrically below "
-            "and above nominal gamma."
-        )
+        raise ValueError("count must be positive.")
 
     if step_ratio <= 1.0:
         raise ValueError(
-            "--gamma-step-ratio must be greater than 1.0"
+            "step_ratio must be greater than 1.0."
         )
 
-    half_count = count // 2
+    # center 模式必須包含正中央的 1.0
+    if mode == "center" and count % 2 == 0:
+        count += 1
 
-    # 由最小 gamma 排到 nominal 下方
-    lower_factors = [
-        step_ratio ** (-power)
-        for power in range(
-            half_count,
-            0,
-            -1,
+    if mode == "center":
+        center = (count - 1) // 2
+
+        factors = [
+            step_ratio ** (index - center)
+            for index in range(count)
+        ]
+
+    elif mode == "min":
+        factors = [
+            step_ratio ** index
+            for index in range(count)
+        ]
+
+    elif mode == "max":
+        factors = [
+            step_ratio ** (1 - index)
+            for index in range(count)
+        ]
+
+    else:
+        raise ValueError(
+            f"Invalid mode: {mode!r}. "
+            "Available modes: 'center', 'min', 'max'."
         )
-    ]
-    lower_factors.append(1)
-    # 由 nominal 上方排到最大 gamma
-    upper_factors = [
-        step_ratio ** power
-        for power in range(
-            1,
-            half_count + 1,
-        )
-    ]
 
-    return (
-        lower_factors
-        + upper_factors
-    )
-
-
+    return factors
 def make_candidate(
     nominal: dict[str, float],
     factors: dict[str, float],
@@ -459,23 +436,37 @@ def generate_candidates(
     ps_ratio: tuple[float, float] | None,
     ec_ratio: tuple[float, float] | None,
     gamma_step_ratio: float,
+    sweep_parameters: list[str] | None = None,
+    parameter_step_ratio: float = 10.0,
+    parameter_sweep_mode: str = "center",
 ) -> list[Candidate]:
     if count <= 0:
         raise ValueError("count must be positive")
 
     rng = np.random.default_rng(seed)
+
     accepted: list[Candidate] = []
-    accepted_keys: set[tuple[float, float, float]] = set()
+    accepted_keys: set[
+        tuple[float, float, float]
+    ] = set()
 
     nominal_ps = landau_spontaneous_p(**nominal)
     nominal_ec = landau_intrinsic_ec(**nominal)
 
     def try_add(candidate: Candidate) -> bool:
         key = candidate_key(candidate)
+
         if key in accepted_keys:
             return False
-        if is_existing_duplicate(candidate, existing_records, t_fe_m, fixed_values):
+
+        if is_existing_duplicate(
+            candidate,
+            existing_records,
+            t_fe_m,
+            fixed_values,
+        ):
             return False
+
         if not passes_optional_screen(
             candidate,
             nominal_ps,
@@ -484,90 +475,169 @@ def generate_candidates(
             ec_ratio,
         ):
             return False
+
         accepted.append(candidate)
         accepted_keys.add(key)
+
         return True
-    
+
     # ========================================================
-    # Gamma-only symmetric sweep
+    # Parameter sweep
     # ========================================================
 
-    if design == "gamma-sweep":
+    if design == "parameter-sweep":
 
-        gamma_factors = symmetric_gamma_factors(
+        # 移除重複參數，並保留原本輸入順序
+        selected_parameters = list(
+            dict.fromkeys(sweep_parameters or [])
+        )
+
+        if not selected_parameters:
+            raise ValueError(
+                "sweep_parameters must contain "
+                "at least one parameter."
+            )
+
+        invalid_parameters = [
+            parameter
+            for parameter in selected_parameters
+            if parameter not in PARAMETERS
+        ]
+
+        if invalid_parameters:
+            raise ValueError(
+                "Invalid sweep parameters: "
+                f"{invalid_parameters}. "
+                f"Available parameters: {PARAMETERS}"
+            )
+
+        parameter_factors = parameter_sweep_factors(
             count=count,
-            step_ratio=gamma_step_ratio,
+            step_ratio=parameter_step_ratio,
+            mode=parameter_sweep_mode,
         )
 
         print(
-            "Gamma sweep factors:",
+            "Parameter sweep targets:",
+            selected_parameters,
+        )
+
+        print(
+            "Parameter sweep factors:",
             [
                 f"{factor:.8g}"
-                for factor in gamma_factors
+                for factor in parameter_factors
             ],
         )
 
-        for gamma_factor in gamma_factors:
+        for parameter_factor in parameter_factors:
 
-            # alpha、beta 與其他 PARAMETERS
-            # 全部保持 nominal
+            # 所有參數預設保持 nominal
             factors = {
                 key: 1.0
                 for key in PARAMETERS
             }
 
-            # 只改 gamma
-            factors["gamma"] = gamma_factor
+            # 所有指定參數同步套用相同倍率
+            for parameter in selected_parameters:
+                factors[parameter] = parameter_factor
 
             candidate = make_candidate(
-                nominal,
-                factors,
-                design="gamma-sweep",
+                nominal=nominal,
+                factors=factors,
+                design="parameter-sweep",
             )
 
             if not try_add(candidate):
-              print(
-                  "[WARNING] Gamma-sweep candidate was rejected: "
-                  f"gamma_factor={gamma_factor:.8g}. "
-                  "The candidate may already exist or may "
-                  "fail the optional Ps/Ec screening."
-              )
-              continue
+                print(
+                    "[WARNING] Parameter-sweep candidate "
+                    "was rejected: "
+                    f"parameters={selected_parameters}, "
+                    f"factor={parameter_factor:.8g}. "
+                    "The candidate may already exist or may "
+                    "fail the optional Ps/Ec screening."
+                )
+                continue
+
+        print(
+            "Accepted parameter-sweep candidates:",
+            len(accepted),
+            "/",
+            len(parameter_factors),
+        )
+
         return accepted
-    
+
+    # ========================================================
+    # Hybrid: one-at-a-time candidates followed by LHS
+    # ========================================================
+
     if design == "hybrid":
         for candidate in one_at_a_time_candidates(nominal):
             if len(accepted) >= count:
                 break
+
             try_add(candidate)
 
+    # ========================================================
+    # LHS generation
+    # ========================================================
+
     attempts = 0
-    max_attempts = max(10_000, count * 2_000)
-    while len(accepted) < count and attempts < max_attempts:
+    max_attempts = max(
+        10_000,
+        count * 2_000,
+    )
+
+    while (
+        len(accepted) < count
+        and attempts < max_attempts
+    ):
         remaining = count - len(accepted)
-        batch_size = max(remaining * 4, 32)
-        unit_points = lhs_unit(batch_size, len(PARAMETERS), rng)
+        batch_size = max(
+            remaining * 4,
+            32,
+        )
+
+        unit_points = lhs_unit(
+            batch_size,
+            len(PARAMETERS),
+            rng,
+        )
 
         for point in unit_points:
             factors: dict[str, float] = {}
+
             for index, key in enumerate(PARAMETERS):
                 variation = VARIATION_FRACTIONS[key]
-                factors[key] = 1.0 + (2.0 * point[index] - 1.0) * variation
+
+                factors[key] = (
+                    1.0
+                    + (2.0 * point[index] - 1.0)
+                    * variation
+                )
 
             candidate = make_candidate(
-                nominal,
-                factors,
+                nominal=nominal,
+                factors=factors,
                 design="LHS",
             )
+
             attempts += 1
             try_add(candidate)
-            if len(accepted) >= count or attempts >= max_attempts:
+
+            if (
+                len(accepted) >= count
+                or attempts >= max_attempts
+            ):
                 break
 
     if len(accepted) != count:
         raise RuntimeError(
-            f"Could generate only {len(accepted)} unique cases out of {count}. "
-            "Relax the optional Ps/Ec screening ranges or change the seed."
+            f"Could generate only {len(accepted)} "
+            f"unique cases out of {count}. "
+            "Relax the optional Ps/Ec screening ranges "
+            "or change the seed."
         )
 
     return accepted
@@ -1097,7 +1167,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=20260712)
     parser.add_argument(
         "--design",
-        choices=("lhs", "hybrid", "gamma-sweep"),
+        choices=("lhs", "hybrid", "parameter-sweep"),
         default="hybrid",
         help="hybrid adds six one-at-a-time endpoints before LHS samples.",
     )
@@ -1175,6 +1245,40 @@ def build_parser() -> argparse.ArgumentParser:
             "--design gamma-sweep. "
             "For example, 1.3 generates gamma levels "
             "separated by a factor of 1.3."
+        ),
+    )
+    parser.add_argument(
+        "--sweep-parameters",
+        nargs="+",
+        choices=PARAMETERS,
+        default=["gamma"],
+        help=(
+            "One or more parameters varied simultaneously by "
+            "parameter-sweep. All selected parameters use the "
+            "same factor at each sweep step. "
+            f"Available choices: {', '.join(PARAMETERS)}. "
+            "Default: gamma."
+        ),
+    )
+    
+    parser.add_argument(
+        "--parameter-step-ratio",
+        type=float,
+        default=0.1,
+        help=(
+            "Geometric ratio between neighboring sweep factors. "
+            "For example, 10 produces factors differing by 10x."
+        ),
+    )
+    parser.add_argument(
+        "--parameter-sweep-mode",
+        choices=["center", "min", "max"],
+        default="center",
+        help=(
+            "Sweep factor arrangement: "
+            "'center' centers factors at 1.0, "
+            "'min' starts from 1.0, "
+            "'max' ends at 1.0."
         ),
     )
     return parser
@@ -1351,6 +1455,9 @@ def main() -> int:
             ps_ratio=args.ps_ratio,
             ec_ratio=args.ec_ratio,
             gamma_step_ratio=args.gamma_step_ratio,
+            sweep_parameters=args.sweep_parameters,
+            parameter_step_ratio=args.parameter_step_ratio,
+            parameter_sweep_mode=args.parameter_sweep_mode,
         )
 
         final_index = (
