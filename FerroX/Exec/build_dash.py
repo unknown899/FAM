@@ -5,6 +5,22 @@ import html
 import re
 from datetime import datetime, timedelta
 
+import sys
+
+CURRENT_DIR = Path.cwd().resolve()
+
+# analyze.ipynb 若位於 case 資料夾，
+# utils 通常位於其上一層 Exec/utils
+PROJECT_DIR = CURRENT_DIR.parent
+
+if str(PROJECT_DIR) not in sys.path:
+    sys.path.insert(0, str(PROJECT_DIR))
+
+from utils.landau_EPR_transformer import (
+    check_landau_EPR,
+    landau_to_EPR,
+)
+
 def read_run_log(folder):
     logfile = folder / "run.log"
     if not logfile.exists():
@@ -65,6 +81,11 @@ wanted = [
     "g44",
     "FE_lo",
     "FE_hi",
+    "Ec",
+    "Pr",
+    "Pc0",
+    "rp",
+    "landau_consistency_pass"
 ]
 
 IMAGE_PATTERNS = [
@@ -112,6 +133,23 @@ def read_inputs(path):
                 continue
 
             params[key] = parse_value(value)
+        epr = landau_to_EPR(params["alpha"], params["beta"], params["gamma"])
+        params["Ec"]=epr.Ec
+        params["Pr"]=epr.Pr
+        params["Pc0"]=epr.Pc0
+        params["rp"]=epr.rp
+        check = check_landau_EPR(
+                            params["alpha"],
+                            params["beta"],
+                            params["gamma"],
+                            epr.Ec,
+                            epr.Pr,
+                            epr.Pc0,
+                            epr.rp,
+                            rtol=1e-9,
+                            atol=0.0,
+                        )
+        params["landau_consistency_pass"] = check.passed
 
     return params
 
@@ -388,8 +426,8 @@ function updateTable() {
     // 例如 "alpha=-8e9 T_FE=8e-9"
     const conditions = filter === ""
         ? []
-        : filter.split(/\s+/).map(str => {
-            const m = str.match(/^(\w+)(<=|>=|=|<|>)(.+)$/);
+        : filter.split(/\\s+/).map(str => {
+            const m = str.match(/^(\\w+)(<=|>=|=|<|>)(.+)$/);
             if (!m) return null;
 
             return {
@@ -414,10 +452,15 @@ function updateTable() {
             alpha  : Number(cells[1].textContent),
             beta   : Number(cells[2].textContent),
             gamma  : Number(cells[3].textContent),
-            g11    : Number(cells[4].textContent),
-            t_DE   : Number(cells[5].textContent),
-            t_OX   : Number(cells[6].textContent),
-            T_FE   : Number(cells[7].textContent),
+            BigGamma: Number(cells[4].textContent),
+            g11    : Number(cells[5].textContent),
+            g44    : Number(cells[6].textContent),
+            Ec     : Number(cells[7].textContent),
+            Pr     : Number(cells[8].textContent),
+            Pc0    : Number(cells[9].textContent),
+            rp     : Number(cells[10].textContent),
+            landau_consistency_pass: cells[11].textContent.trim() === "True",
+            T_FE   : Number(cells[12].textContent),
         };
 
         // 沒輸入任何條件 → 全部顯示
