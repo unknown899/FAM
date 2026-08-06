@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Add/update ``valid_loop`` in MFIS_dataset.xlsx.
+"""Calculate P-V loop validity and update an Excel workbook.
+
+Use ``python add_valid_loop_to_excel.py --help`` for the complete command
+workflow and copyable examples.
 
 For each case directory whose name starts with ``--prefix``, read
 ``figs/MFIS_PV_curve.csv`` and define (CSV header excluded):
@@ -18,6 +21,11 @@ The loop is valid when all of the following are true:
 Only worksheet rows whose ``folder`` matches a selected directory are
 changed. Other rows are left untouched. If a matching case has no CSV, its
 ``valid_loop`` value is set to ``no_data`` and processing continues.
+
+With ``--dry-run``, proposed values are written only to a temporary workbook.
+``build_dash.py`` then uses that temporary workbook to generate an HTML
+preview, after which the temporary workbook is deleted. Without ``--dry-run``,
+the workbook selected by ``--excel`` is updated.
 """
 
 from __future__ import annotations
@@ -26,7 +34,9 @@ import argparse
 import math
 import os
 import tempfile
+from copy import copy
 from pathlib import Path
+from typing import Any
 
 from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
@@ -42,6 +52,52 @@ DEFAULT_VALID_COLUMN = "valid_loop"
 DEFAULT_PREVIEW_HTML = "index.html"
 MISSING_DATA_VALUE = "no_data"
 RELATIVE_CSV_PATH = Path("figs") / "MFIS_PV_curve.csv"
+
+HELP_EPILOG = r"""
+使用流程:
+  1. 先用 --dry-run 產生 HTML，確認 valid_loop 與對應圖片。
+  2. 視需要調整 threshold，重新執行 dry-run。
+  3. 確認後移除 --dry-run，才會寫入指定 Excel。
+
+結果值:
+  1       三項 loop 條件皆通過
+  0       至少一項 loop 條件未通過
+  no_data 找不到該 case 的 figs/MFIS_PV_curve.csv
+
+Excel 欄位:
+  完全沿用 add_EPR 的新增欄位邏輯：新欄繼承 gamma 欄格式，並延伸
+  AutoFilter 與 Excel Table；欄位已存在時也會補齊表頭、格式與篩選範圍。
+
+範例 1：預覽 MFIS_t_5_ cases
+  python add_valid_loop_to_excel.py \
+      --prefix MFIS_t_5_ \
+      --open-threshold 0.1 \
+      --close-threshold 0.02 \
+      --dry-run
+
+  預設讀取 MFIS_dataset.xlsx，並產生 index.html；正式 Excel 不會改變。
+
+範例 2：指定 Excel 與預覽 HTML
+  python add_valid_loop_to_excel.py \
+      --prefix MFIS_t_5_ \
+      --open-threshold 0.1 \
+      --close-threshold 0.02 \
+      --excel other_dataset.xlsx \
+      --html valid_preview.html \
+      --dry-run
+
+範例 3：確認後寫入 Excel
+  python add_valid_loop_to_excel.py \
+      --prefix MFIS_t_5_ \
+      --open-threshold 0.1 \
+      --close-threshold 0.02 \
+      --excel other_dataset.xlsx
+
+提示:
+  --dry_run 等同 --dry-run
+  --excel-name 等同 --excel
+  --preview-html 等同 --html
+"""
 
 
 def nonnegative_float(text: str) -> float:
@@ -64,7 +120,9 @@ def parse_args() -> argparse.Namespace:
         description=(
             "Set valid_loop for case folders in the execution directory "
             "whose names begin with a specified prefix."
-        )
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=HELP_EPILOG,
     )
     parser.add_argument(
         "--prefix",
@@ -157,53 +215,153 @@ def resolve_under_root(path: Path, root: Path) -> Path:
     return path if path.is_absolute() else root / path
 
 
-def normalized_name(value: object) -> str:
-    return "" if value is None else str(value).strip().casefold()
+def _normalize_header(value: Any) -> str:
+    if value is None:
+        return ""
+    return "".join(str(value).strip().casefold().split())
 
 
-def find_header_column(
-    worksheet: Worksheet,
-    column_name: str,
-    *,
-    create: bool,
+def _find_header_column(
+    worksheet: Any,
+    header_row: int,
+    aliases: set[str],
 ) -> int:
-    """Find a row-1 header case-insensitively, optionally appending it."""
-
-    wanted = normalized_name(column_name)
+    normalized_aliases = {_normalize_header(alias) for alias in aliases}
     matches = [
-        cell.column
-        for cell in worksheet[1]
-        if normalized_name(cell.value) == wanted
+        column
+        for column in range(1, worksheet.max_column + 1)
+        if _normalize_header(worksheet.cell(header_row, column).value)
+        in normalized_aliases
     ]
-
-    if len(matches) > 1:
-        raise ValueError(
-            f"Worksheet {worksheet.title!r} contains duplicate {column_name!r} headers."
-        )
-    if matches:
-        return matches[0]
-    if not create:
-        available = [
-            str(cell.value).strip()
-            for cell in worksheet[1]
-            if cell.value is not None and str(cell.value).strip()
-        ]
+    if not matches:
         raise KeyError(
-            f"Column {column_name!r} was not found in worksheet "
-            f"{worksheet.title!r}. Available headers: {available}"
+            f"Could not find any of {sorted(aliases)!r} in header row {header_row}"
+        )
+    if len(matches) > 1:
+        raise KeyError(f"Multiple matching columns for {sorted(aliases)!r}: {matches}")
+    return matches[0]
+
+
+def _ensure_output_column(
+    worksheet: Any,
+    header_row: int,
+    name: str,
+    style_source_column: int,
+) -> tuple[int, bool]:
+    normalized_name = _normalize_header(name)
+    for column in range(1, worksheet.max_column + 1):
+        if _normalize_header(worksheet.cell(header_row, column).value) == normalized_name:
+            return column, False
+
+    column = worksheet.max_column + 1
+    source = worksheet.cell(header_row, style_source_column)
+    target = worksheet.cell(header_row, column, name)
+    if source.has_style:
+        target._style = copy(source._style)
+    target.alignment = copy(source.alignment)
+    target.protection = copy(source.protection)
+    return column, True
+
+
+def _copy_style(source: Any, target: Any) -> None:
+    if source.has_style:
+        target._style = copy(source._style)
+    target.alignment = copy(source.alignment)
+    target.protection = copy(source.protection)
+
+
+def _extend_filter_and_tables(
+    worksheet: Any,
+    *,
+    header_row: int,
+    old_max_column: int,
+    new_max_column: int,
+) -> None:
+    if new_max_column <= old_max_column:
+        return
+
+    from openpyxl.utils import get_column_letter, range_boundaries
+    from openpyxl.worksheet.table import TableColumn
+
+    def extend_ref(reference: str) -> str:
+        min_col, min_row, max_col, max_row = range_boundaries(reference)
+        if min_row == header_row and max_col == old_max_column:
+            max_col = new_max_column
+        return (
+            f"{get_column_letter(min_col)}{min_row}:"
+            f"{get_column_letter(max_col)}{max_row}"
         )
 
-    last_header_column = max(
-        (
-            cell.column
-            for cell in worksheet[1]
-            if cell.value is not None and str(cell.value).strip()
-        ),
-        default=0,
+    if worksheet.auto_filter.ref:
+        worksheet.auto_filter.ref = extend_ref(worksheet.auto_filter.ref)
+
+    for table in worksheet.tables.values():
+        _, min_row, max_col, _ = range_boundaries(table.ref)
+        if min_row != header_row or max_col != old_max_column:
+            continue
+
+        next_id = max((column.id for column in table.tableColumns), default=0) + 1
+        for column in range(old_max_column + 1, new_max_column + 1):
+            table.tableColumns.append(
+                TableColumn(
+                    id=next_id,
+                    name=str(worksheet.cell(header_row, column).value),
+                )
+            )
+            next_id += 1
+        table.ref = extend_ref(table.ref)
+        if table.autoFilter is not None and table.autoFilter.ref:
+            table.autoFilter.ref = extend_ref(table.autoFilter.ref)
+
+
+def _repair_existing_output_column(
+    worksheet: Any,
+    *,
+    header_row: int,
+    style_source_column: int,
+    output_column: int,
+    width: float,
+) -> None:
+    """Repair a column created by an older run but left outside the filter."""
+
+    from openpyxl.utils import get_column_letter, range_boundaries
+    from openpyxl.worksheet.table import TableColumn
+
+    _copy_style(
+        worksheet.cell(header_row, style_source_column),
+        worksheet.cell(header_row, output_column),
     )
-    new_column = last_header_column + 1
-    worksheet.cell(row=1, column=new_column, value=column_name)
-    return new_column
+    worksheet.column_dimensions[get_column_letter(output_column)].width = width
+
+    def extend_ref(reference: str) -> str:
+        min_col, min_row, max_col, max_row = range_boundaries(reference)
+        if min_row == header_row and max_col < output_column:
+            max_col = output_column
+        return (
+            f"{get_column_letter(min_col)}{min_row}:"
+            f"{get_column_letter(max_col)}{max_row}"
+        )
+
+    if worksheet.auto_filter.ref:
+        worksheet.auto_filter.ref = extend_ref(worksheet.auto_filter.ref)
+
+    for table in worksheet.tables.values():
+        _, min_row, max_col, _ = range_boundaries(table.ref)
+        if min_row != header_row or max_col >= output_column:
+            continue
+
+        next_id = max((column.id for column in table.tableColumns), default=0) + 1
+        for column in range(max_col + 1, output_column + 1):
+            table.tableColumns.append(
+                TableColumn(
+                    id=next_id,
+                    name=str(worksheet.cell(header_row, column).value),
+                )
+            )
+            next_id += 1
+        table.ref = extend_ref(table.ref)
+        if table.autoFilter is not None and table.autoFilter.ref:
+            table.autoFilter.ref = extend_ref(table.autoFilter.ref)
 
 
 def discover_case_directories(root: Path, prefix: str) -> list[Path]:
@@ -239,8 +397,8 @@ def save_workbook_atomically(workbook: object, output_path: Path) -> None:
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{output_path.name}.",
-        suffix=".tmp",
+        prefix=f".{output_path.stem}.",
+        suffix=output_path.suffix,
         dir=output_path.parent,
     )
     os.close(descriptor)
@@ -298,17 +456,41 @@ def run(args: argparse.Namespace) -> int:
         )
     worksheet = workbook[args.sheet]
 
-    file_column = find_header_column(
+    file_column = _find_header_column(worksheet, 1, {args.file_column})
+    gamma_column = _find_header_column(worksheet, 1, {"gamma", "γ"})
+
+    old_max_column = worksheet.max_column
+    valid_column, _ = _ensure_output_column(
         worksheet,
-        args.file_column,
-        create=False,
-    )
-    valid_column = find_header_column(
-        worksheet,
+        1,
         args.valid_column,
-        create=True,
+        gamma_column,
     )
+
+    _extend_filter_and_tables(
+        worksheet,
+        header_row=1,
+        old_max_column=old_max_column,
+        new_max_column=worksheet.max_column,
+    )
+    # The column may already exist from an older run but still be outside the
+    # AutoFilter and have an unformatted header.  Reapplying the EPR-style
+    # formatting makes reruns repair that partial state as well as add new data.
+    _repair_existing_output_column(
+        worksheet,
+        header_row=1,
+        style_source_column=gamma_column,
+        output_column=valid_column,
+        width=14.0,
+    )
+
     excel_rows = worksheet_rows_by_case(worksheet, file_column)
+    for row_numbers in excel_rows.values():
+        for row_number in row_numbers:
+            _copy_style(
+                worksheet.cell(row_number, gamma_column),
+                worksheet.cell(row_number, valid_column),
+            )
     analyzer = loop_metrics.LoopAnalyzer(
         open_threshold=args.open_threshold,
         close_threshold=args.close_threshold,
@@ -358,11 +540,12 @@ def run(args: argparse.Namespace) -> int:
 
     for case_name, row_numbers, metrics in pending_updates:
         for row_number in row_numbers:
-            worksheet.cell(
+            target_cell = worksheet.cell(
                 row=row_number,
                 column=valid_column,
-                value=metrics.valid_loop,
             )
+            target_cell.value = metrics.valid_loop
+            target_cell.number_format = "General"
             updated_row_count += 1
 
         if metrics.valid_loop:
@@ -373,11 +556,12 @@ def run(args: argparse.Namespace) -> int:
 
     for case_name, row_numbers, csv_path in missing_csv_updates:
         for row_number in row_numbers:
-            worksheet.cell(
+            target_cell = worksheet.cell(
                 row=row_number,
                 column=valid_column,
-                value=MISSING_DATA_VALUE,
             )
+            target_cell.value = MISSING_DATA_VALUE
+            target_cell.number_format = "General"
             updated_row_count += 1
         print(
             f"[NO DATA] {case_name}: CSV not found: {csv_path}; "

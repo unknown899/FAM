@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Build the MFIS HTML dashboard from an Excel workbook.
 
-The ``experiments`` worksheet supplies parameters, times, and status values.
+The ``experiments`` worksheet supplies parameters, times, and status values,
+including ``valid_loop`` and ``has_multi``.
 PV/Pz images are located under each case folder in ``--data-root``. Use
 ``python build_dash.py --help`` for copyable command and import examples.
 """
@@ -36,6 +37,7 @@ WANTED = [
     "rp",
     "landau_consistency_pass",
     "valid_loop",
+    "has_multi",
 ]
 
 IMAGE_FILES = {
@@ -45,7 +47,7 @@ IMAGE_FILES = {
 
 HELP_EPILOG = r"""
 資料來源:
-  Excel 的 experiments worksheet：folder、參數、時間、valid_loop 等欄位
+  Excel 的 experiments worksheet：folder、參數、時間、valid_loop、has_multi 等欄位
   --data-root/folder/figs/：MFIS_PV_curve.png、Pz_FE_layer_stack.png
 
 範例 1：使用預設檔案
@@ -58,6 +60,9 @@ HELP_EPILOG = r"""
       --excel temporary_dataset.xlsx \
       --data-root /home/bowei/FAM/FerroX/Exec \
       --output valid_preview.html
+
+產生 HTML 後可在搜尋欄篩選狀態:
+  has_multi=1 valid_loop=1
 
 在其他 Python 程式中呼叫:
   import build_dash
