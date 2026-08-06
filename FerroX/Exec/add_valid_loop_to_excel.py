@@ -15,49 +15,33 @@ The loop is valid when all of the following are true:
     P_r+ > 0 and P_r- < 0
     abs(P_start - P_end) < close_threshold
 
-Only worksheet rows whose ``file_name`` matches a selected directory are
-changed. Other rows are left untouched.
+Only worksheet rows whose ``folder`` matches a selected directory are
+changed. Other rows are left untouched. If a matching case has no CSV, its
+``valid_loop`` value is set to ``no_data`` and processing continues.
 """
 
 from __future__ import annotations
 
 import argparse
-import csv
 import math
 import os
 import tempfile
-from dataclasses import dataclass
 from pathlib import Path
 
 from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
+import build_dash
+from utils import loop_metrics
+
 
 DEFAULT_EXCEL_NAME = "MFIS_dataset.xlsx"
 DEFAULT_SHEET_NAME = "experiments"
-DEFAULT_FILE_COLUMN = "file_name"
+DEFAULT_FILE_COLUMN = "folder"
 DEFAULT_VALID_COLUMN = "valid_loop"
-DEFAULT_P_COLUMN = "P_mean"
+DEFAULT_PREVIEW_HTML = "index.html"
+MISSING_DATA_VALUE = "no_data"
 RELATIVE_CSV_PATH = Path("figs") / "MFIS_PV_curve.csv"
-
-
-@dataclass(frozen=True)
-class LoopMetrics:
-    """Polarization values and the resulting validity checks for one case."""
-
-    p_start: float
-    p_r_minus: float
-    p_r_plus: float
-    p_end: float
-    open_gap: float
-    close_gap: float
-    open_ok: bool
-    sign_ok: bool
-    close_ok: bool
-
-    @property
-    def valid_loop(self) -> int:
-        return int(self.open_ok and self.sign_ok and self.close_ok)
 
 
 def nonnegative_float(text: str) -> float:
@@ -107,9 +91,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--excel",
+        "--excel-name",
+        dest="excel",
         type=Path,
         default=Path(DEFAULT_EXCEL_NAME),
-        help=f"Input workbook, relative to --root unless absolute (default: {DEFAULT_EXCEL_NAME}).",
+        help=(
+            "Excel filename/path, relative to --root unless absolute "
+            f"(default: {DEFAULT_EXCEL_NAME})."
+        ),
     )
     parser.add_argument(
         "--output",
@@ -134,13 +123,32 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--p-column",
-        default=DEFAULT_P_COLUMN,
-        help=f"Polarization column in each CSV (default: {DEFAULT_P_COLUMN}).",
+        default=loop_metrics.DEFAULT_P_COLUMN,
+        help=(
+            "Polarization column in each CSV "
+            f"(default: {loop_metrics.DEFAULT_P_COLUMN})."
+        ),
     )
     parser.add_argument(
         "--dry-run",
+        "--dry_run",
+        dest="dry_run",
         action="store_true",
-        help="Calculate and print results without writing the workbook.",
+        help=(
+            "Write proposed values to a temporary workbook and generate "
+            "a preview dashboard without changing the real workbook."
+        ),
+    )
+    parser.add_argument(
+        "--preview-html",
+        "--html",
+        dest="preview_html",
+        type=Path,
+        default=Path(DEFAULT_PREVIEW_HTML),
+        help=(
+            "HTML generated during --dry-run, relative to --root unless "
+            f"absolute (default: {DEFAULT_PREVIEW_HTML})."
+        ),
     )
     return parser.parse_args()
 
@@ -211,83 +219,6 @@ def discover_case_directories(root: Path, prefix: str) -> list[Path]:
     )
 
 
-def read_p_mean_rows(csv_path: Path, p_column: str) -> list[float]:
-    """Read all nonblank data rows from the requested P_mean column."""
-
-    with csv_path.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        if reader.fieldnames is None:
-            raise ValueError("CSV has no header row.")
-
-        header_lookup = {
-            normalized_name(header): header
-            for header in reader.fieldnames
-            if header is not None
-        }
-        actual_p_column = header_lookup.get(normalized_name(p_column))
-        if actual_p_column is None:
-            raise KeyError(
-                f"Column {p_column!r} was not found. "
-                f"Available columns: {reader.fieldnames}"
-            )
-
-        values: list[float] = []
-        for csv_row_number, row in enumerate(reader, start=2):
-            if not any(
-                value is not None and str(value).strip()
-                for value in row.values()
-            ):
-                continue
-
-            raw_value = row.get(actual_p_column)
-            try:
-                value = float(str(raw_value).strip())
-            except (TypeError, ValueError) as exc:
-                raise ValueError(
-                    f"Invalid {actual_p_column} value at CSV row "
-                    f"{csv_row_number}: {raw_value!r}"
-                ) from exc
-            if not math.isfinite(value):
-                raise ValueError(
-                    f"Non-finite {actual_p_column} value at CSV row "
-                    f"{csv_row_number}: {raw_value!r}"
-                )
-            values.append(value)
-
-    if len(values) < 37:
-        raise ValueError(
-            f"At least 37 data rows are required, but only {len(values)} were found."
-        )
-    return values
-
-
-def calculate_loop_metrics(
-    p_mean_values: list[float],
-    open_threshold: float,
-    close_threshold: float,
-) -> LoopMetrics:
-    # User-facing row numbers are 1-based; list indices are 0-based.
-    p_start = -p_mean_values[0]
-    p_r_minus = -p_mean_values[9]
-    p_r_plus = -p_mean_values[27]
-    p_end = -p_mean_values[36]
-
-    open_gap = abs(p_r_plus - p_r_minus)
-    close_gap = abs(p_start - p_end)
-
-    return LoopMetrics(
-        p_start=p_start,
-        p_r_minus=p_r_minus,
-        p_r_plus=p_r_plus,
-        p_end=p_end,
-        open_gap=open_gap,
-        close_gap=close_gap,
-        open_ok=open_gap > open_threshold,
-        sign_ok=p_r_plus > 0 and p_r_minus < 0,
-        close_ok=close_gap < close_threshold,
-    )
-
-
 def worksheet_rows_by_case(
     worksheet: Worksheet,
     file_column: int,
@@ -322,7 +253,7 @@ def save_workbook_atomically(workbook: object, output_path: Path) -> None:
         temporary_path.unlink(missing_ok=True)
 
 
-def format_result(case_name: str, metrics: LoopMetrics) -> str:
+def format_result(case_name: str, metrics: loop_metrics.LoopMetrics) -> str:
     return (
         f"{case_name}: valid_loop={metrics.valid_loop} | "
         f"P_r-={metrics.p_r_minus:.8g}, P_r+={metrics.p_r_plus:.8g}, "
@@ -346,6 +277,10 @@ def run(args: argparse.Namespace) -> int:
         if args.output is None
         else resolve_under_root(args.output.expanduser(), root).resolve()
     )
+    preview_html_path = resolve_under_root(
+        args.preview_html.expanduser(),
+        root,
+    ).resolve()
     if not excel_path.is_file():
         raise FileNotFoundError(f"Workbook does not exist: {excel_path}")
 
@@ -374,12 +309,16 @@ def run(args: argparse.Namespace) -> int:
         create=True,
     )
     excel_rows = worksheet_rows_by_case(worksheet, file_column)
+    analyzer = loop_metrics.LoopAnalyzer(
+        open_threshold=args.open_threshold,
+        close_threshold=args.close_threshold,
+        p_column=args.p_column,
+    )
 
-    pending_updates: list[tuple[str, list[int], LoopMetrics]] = []
+    pending_updates: list[tuple[str, list[int], loop_metrics.LoopMetrics]] = []
+    missing_csv_updates: list[tuple[str, list[int], Path]] = []
     unmatched_directories: list[str] = []
     errors: list[str] = []
-    missing_csv_row_count = 0
-    missing_csv_case_count = 0
 
     for case_directory in case_directories:
         case_name = case_directory.name
@@ -390,24 +329,11 @@ def run(args: argparse.Namespace) -> int:
 
         csv_path = case_directory / RELATIVE_CSV_PATH
         if not csv_path.is_file():
-            for row_number in matching_rows:
-                worksheet.cell(
-                    row=row_number,
-                    column=valid_column,
-                    value="no_data",
-                )
-                missing_csv_row_count += 1
-
-            missing_csv_case_count += 1
-            print(f"[NO DATA] {case_name}: CSV not found: {csv_path}")
+            missing_csv_updates.append((case_name, matching_rows, csv_path))
             continue
+
         try:
-            p_mean_values = read_p_mean_rows(csv_path, args.p_column)
-            metrics = calculate_loop_metrics(
-                p_mean_values,
-                args.open_threshold,
-                args.close_threshold,
-            )
+            metrics = analyzer.analyze_csv(csv_path)
         except (OSError, KeyError, ValueError) as exc:
             errors.append(f"{case_name}: {csv_path}: {exc}")
             continue
@@ -420,7 +346,7 @@ def run(args: argparse.Namespace) -> int:
             "No workbook changes were saved because one or more selected "
             f"cases could not be evaluated:\n{details}"
         )
-    if not pending_updates and missing_csv_row_count == 0:
+    if not pending_updates and not missing_csv_updates:
         raise RuntimeError(
             "No selected case directory matched a value in the worksheet "
             f"column {args.file_column!r}; no changes were saved."
@@ -428,7 +354,7 @@ def run(args: argparse.Namespace) -> int:
 
     valid_count = 0
     invalid_count = 0
-    updated_row_count = missing_csv_row_count
+    updated_row_count = 0
 
     for case_name, row_numbers, metrics in pending_updates:
         for row_number in row_numbers:
@@ -445,6 +371,19 @@ def run(args: argparse.Namespace) -> int:
             invalid_count += 1
         print(format_result(case_name, metrics))
 
+    for case_name, row_numbers, csv_path in missing_csv_updates:
+        for row_number in row_numbers:
+            worksheet.cell(
+                row=row_number,
+                column=valid_column,
+                value=MISSING_DATA_VALUE,
+            )
+            updated_row_count += 1
+        print(
+            f"[NO DATA] {case_name}: CSV not found: {csv_path}; "
+            f"valid_loop={MISSING_DATA_VALUE}"
+        )
+
     for case_name in unmatched_directories:
         print(
             f"[WARNING] {case_name}: directory matched the prefix but was not "
@@ -452,18 +391,38 @@ def run(args: argparse.Namespace) -> int:
         )
 
     if args.dry_run:
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{excel_path.stem}.valid_loop_preview.",
+            suffix=".xlsx",
+            dir=root,
+        )
+        os.close(descriptor)
+        temporary_excel_path = Path(temporary_name)
+
+        try:
+            workbook.save(temporary_excel_path)
+            build_dash.build_dashboard(
+                temporary_excel_path,
+                data_root=root,
+                output_path=preview_html_path,
+                sheet_name=args.sheet,
+            )
+        finally:
+            temporary_excel_path.unlink(missing_ok=True)
+
         print(
             f"[DRY RUN] Would update {updated_row_count} worksheet row(s): "
             f"{valid_count} valid case(s), {invalid_count} invalid case(s), "
-            f"{missing_csv_case_count} case(s) without CSV."
+            f"{len(missing_csv_updates)} case(s) without CSV."
         )
+        print(f"Preview dashboard: {preview_html_path}")
     else:
         save_workbook_atomically(workbook, output_path)
         print(
             f"Saved {output_path} | updated {updated_row_count} worksheet "
             f"row(s): {valid_count} valid case(s), "
-            f"{invalid_count} invalid case(s),"
-            f"{missing_csv_case_count} case(s) without CSV."
+            f"{invalid_count} invalid case(s), "
+            f"{len(missing_csv_updates)} case(s) without CSV."
         )
 
     return 0

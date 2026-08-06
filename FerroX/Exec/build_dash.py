@@ -1,78 +1,27 @@
 #!/usr/bin/env python3
+"""Build the MFIS HTML dashboard from an Excel workbook.
 
-from pathlib import Path
+The ``experiments`` worksheet supplies parameters, times, and status values.
+PV/Pz images are located under each case folder in ``--data-root``. Use
+``python build_dash.py --help`` for copyable command and import examples.
+"""
+
+from __future__ import annotations
+
+import argparse
 import html
-import re
-from datetime import datetime, timedelta
+import os
+from datetime import date, datetime
+from pathlib import Path
 
-import sys
-
-CURRENT_DIR = Path.cwd().resolve()
-
-# analyze.ipynb 若位於 case 資料夾，
-# utils 通常位於其上一層 Exec/utils
-PROJECT_DIR = CURRENT_DIR.parent
-
-if str(PROJECT_DIR) not in sys.path:
-    sys.path.insert(0, str(PROJECT_DIR))
-
-from utils.landau_EPR_transformer import (
-    check_landau_EPR,
-    landau_to_EPR,
-)
-
-def read_run_log(folder):
-    logfile = folder / "run.log"
-    if not logfile.exists():
-        logfile = folder / "plts/run.log"
-    if not logfile.exists():
-        return None, None, None
-    
-    print(f"Reading run log: {logfile}")
-    with open(logfile, errors="ignore") as f:
-        lines = [line.strip() for line in f if line.strip()]
-
-    # 只取最後 200 行
-    lines = lines[-200:]
-
-    end_time = None
-    start_time = None
-    elapsed_hms = None
-    elapsed_sec = None
-
-    # 最後一行 = End Time
-    if lines:
-        try:
-            end_time_str = lines[-1]
-            end_time = datetime.strptime(
-                end_time_str,
-                "%a %b %d %H:%M:%S %Z %Y"
-            )
-        except:
-            pass
-
-    # 找 Total run time
-    for line in lines:
-        if line.startswith("Total run time"):
-            m = re.search(r'([\d.]+)', line)
-            if m:
-                elapsed_sec = float(m.group(1))
-            break
-
-    if elapsed_sec is not None:
-        if end_time is not None:
-            start_time = end_time - timedelta(seconds=elapsed_sec)
-
-        h = int(elapsed_sec // 3600)
-        m = int((elapsed_sec % 3600) // 60)
-        s = int(elapsed_sec % 60)
-
-        elapsed_hms = f"{h:02d}:{m:02d}:{s:02d}"
-    print(f"Start Time: {start_time}, End Time: {end_time}, Elapsed: {elapsed_hms}")
-    return start_time, end_time, elapsed_hms
+from openpyxl import load_workbook
 
 
-wanted = [
+DEFAULT_EXCEL_NAME = "MFIS_dataset.xlsx"
+DEFAULT_SHEET_NAME = "experiments"
+DEFAULT_OUTPUT_NAME = "index.html"
+
+WANTED = [
     "alpha",
     "beta",
     "gamma",
@@ -85,14 +34,8 @@ wanted = [
     "Pr",
     "Pc0",
     "rp",
-    "landau_consistency_pass"
-]
-
-IMAGE_PATTERNS = [
-    "*.png",
-    "*.jpg",
-    "*.jpeg",
-    "*.svg",
+    "landau_consistency_pass",
+    "valid_loop",
 ]
 
 IMAGE_FILES = {
@@ -100,126 +43,204 @@ IMAGE_FILES = {
     "Pz Stack": "Pz_FE_layer_stack.png",
 }
 
+HELP_EPILOG = r"""
+資料來源:
+  Excel 的 experiments worksheet：folder、參數、時間、valid_loop 等欄位
+  --data-root/folder/figs/：MFIS_PV_curve.png、Pz_FE_layer_stack.png
 
-def parse_value(values):
-    vals = [float(v) for v in values.split()]
-    return vals[0] if len(vals) == 1 else vals
+範例 1：使用預設檔案
+  python build_dash.py
+
+  預設讀取 ./MFIS_dataset.xlsx，從目前目錄尋找 case 圖片，產生 ./index.html。
+
+範例 2：指定 Excel、圖片根目錄與輸出 HTML
+  python build_dash.py \
+      --excel temporary_dataset.xlsx \
+      --data-root /home/bowei/FAM/FerroX/Exec \
+      --output valid_preview.html
+
+在其他 Python 程式中呼叫:
+  import build_dash
+
+  build_dash.build_dashboard(
+      "temporary_dataset.xlsx",
+      data_root="/home/bowei/FAM/FerroX/Exec",
+      output_path="valid_preview.html",
+      sheet_name="experiments",
+  )
+"""
 
 
-def sci(v):
-    if v is None:
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Build index.html from the experiments worksheet.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=HELP_EPILOG,
+    )
+    parser.add_argument(
+        "--excel",
+        type=Path,
+        default=Path(DEFAULT_EXCEL_NAME),
+        help=f"Workbook to read (default: {DEFAULT_EXCEL_NAME}).",
+    )
+    parser.add_argument(
+        "--sheet",
+        default=DEFAULT_SHEET_NAME,
+        help=f"Worksheet to read (default: {DEFAULT_SHEET_NAME}).",
+    )
+    parser.add_argument(
+        "--data-root",
+        type=Path,
+        default=Path.cwd(),
+        help="Directory containing the MFIS case folders (default: cwd).",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path(DEFAULT_OUTPUT_NAME),
+        help=f"Output HTML path (default: {DEFAULT_OUTPUT_NAME}).",
+    )
+    return parser.parse_args()
+
+
+def normalized_name(value: object) -> str:
+    return "" if value is None else str(value).strip().casefold()
+
+
+def resolve_under_root(path: Path, root: Path) -> Path:
+    return path if path.is_absolute() else root / path
+
+
+def sci(value: object) -> str:
+    if value is None:
         return ""
-    return f"{float(v):.3e}"
+    return f"{float(value):.3e}"
 
 
-def read_inputs(path):
-    params = {}
-
-    with open(path) as f:
-        for line in f:
-
-            line = line.strip()
-
-            if not line:
-                continue
-
-            if "=" not in line:
-                continue
-
-            key, value = line.split("=", 1)
-            key = key.strip()
-
-            if key not in wanted:
-                continue
-
-            params[key] = parse_value(value)
-        epr = landau_to_EPR(params["alpha"], params["beta"], params["gamma"])
-        params["Ec"]=epr.Ec
-        params["Pr"]=epr.Pr
-        params["Pc0"]=epr.Pc0
-        params["rp"]=epr.rp
-        check = check_landau_EPR(
-                            params["alpha"],
-                            params["beta"],
-                            params["gamma"],
-                            epr.Ec,
-                            epr.Pr,
-                            epr.Pc0,
-                            epr.rp,
-                            rtol=1e-9,
-                            atol=0.0,
-                        )
-        params["landau_consistency_pass"] = check.passed
-
-    return params
+def format_parameter(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return str(value)
+    if isinstance(value, (int, float)):
+        return sci(value)
+    return str(value)
 
 
-def find_images(folder):
-    images = {
-        "PV": None,
-        "Pz": None,
+def format_plain(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        return value.isoformat(sep=" ")
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value)
+
+
+def find_images(folder: Path) -> dict[str, Path | None]:
+    images: dict[str, Path | None] = {
+        "PV Curve": None,
+        "Pz Stack": None,
     }
 
-    pv = list(folder.rglob("MFIS_PV_curve.png"))
-    if pv:
-        images["PV"] = pv[0]
+    if not folder.is_dir():
+        return images
 
-    pz = list(folder.rglob("Pz_FE_layer_stack.png"))
-    if pz:
-        images["Pz"] = pz[0]
+    for title, filename in IMAGE_FILES.items():
+        matches = list(folder.rglob(filename))
+        if matches:
+            images[title] = matches[0]
 
     return images
 
 
-rows = []
+def read_dashboard_rows(
+    excel_path: Path,
+    data_root: Path,
+    sheet_name: str,
+) -> list[dict[str, object]]:
+    workbook = load_workbook(excel_path, data_only=True, read_only=True)
+    try:
+        if sheet_name not in workbook.sheetnames:
+            raise KeyError(
+                f"Worksheet {sheet_name!r} was not found. "
+                f"Available worksheets: {workbook.sheetnames}"
+            )
 
-for folder in sorted(Path(".").glob("MFIS*")):
+        worksheet = workbook[sheet_name]
+        header_values = next(
+            worksheet.iter_rows(min_row=1, max_row=1, values_only=True),
+            (),
+        )
+        header_lookup: dict[str, int] = {}
+        for index, value in enumerate(header_values):
+            name = normalized_name(value)
+            if not name:
+                continue
+            if name in header_lookup:
+                raise ValueError(f"Duplicate worksheet header: {value!r}")
+            header_lookup[name] = index
 
-    if not folder.is_dir():
-        continue
+        folder_column = next(
+            (
+                header_lookup[name]
+                for name in ("folder", "file_name", "run_id")
+                if name in header_lookup
+            ),
+            None,
+        )
+        if folder_column is None:
+            raise KeyError(
+                "No folder column was found. Expected one of: "
+                "folder, file_name, run_id."
+            )
 
-    inp = folder / "inputs"
+        def row_value(values: tuple[object, ...], column_name: str) -> object:
+            index = header_lookup.get(normalized_name(column_name))
+            if index is None or index >= len(values):
+                return None
+            return values[index]
 
-    if not inp.exists():
-        continue
+        rows: list[dict[str, object]] = []
+        for values in worksheet.iter_rows(min_row=2, values_only=True):
+            raw_folder = values[folder_column] if folder_column < len(values) else None
+            if raw_folder is None or not str(raw_folder).strip():
+                continue
 
-    params = read_inputs(inp)
+            folder_name = str(raw_folder).strip()
+            images = find_images(data_root / folder_name)
+            rows.append(
+                {
+                    "folder": folder_name,
+                    "params": {
+                        parameter: row_value(values, parameter)
+                        for parameter in WANTED
+                    },
+                    "tfe": row_value(values, "T_FE"),
+                    "Start Time": row_value(values, "Start Time"),
+                    "End Time": row_value(values, "End Time"),
+                    "Elapsed": row_value(values, "Elapsed"),
+                    **images,
+                }
+            )
 
-    fe_lo = params.get("FE_lo")
-    fe_lo = fe_lo[2]
+        return sorted(rows, key=lambda row: str(row["folder"]))
+    finally:
+        workbook.close()
 
-    fe_hi = params.get("FE_hi")
-    fe_hi = fe_hi[2]
 
-    t_fe = None
-    if fe_lo is not None and fe_hi is not None:
-        t_fe = fe_hi - fe_lo
-
-    imgs = find_images(folder)
-
-    # 找 MFIS*/run.log
-    start_time, end_time, elapsed_hms = read_run_log(
-        folder
+def image_href(image_path: Path, output_path: Path) -> str:
+    relative_path = os.path.relpath(
+        image_path.resolve(),
+        start=output_path.parent.resolve(),
     )
+    return Path(relative_path).as_posix()
 
-    rows.append({
-        "folder": folder.name,
-        "params": params,
-        "tfe": t_fe,
 
-        "Start Time": start_time,
-        "End Time": end_time,
-        "Elapsed": elapsed_hms,
-        
-        "PV Curve": imgs["PV"],
-        "Pz Stack": imgs["Pz"],
-    })
+def render_dashboard(rows: list[dict[str, object]], output_path: Path) -> None:
+    last_update = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-from datetime import datetime
-
-last_update = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-html_text = f"""
+    html_text = f"""
 <!DOCTYPE html>
 
 <html>
@@ -314,7 +335,7 @@ Last Update :
 
 <div>
 Total Experiments :
-<span id="total_exp">27</span>
+<span id="total_exp">{len(rows)}</span>
 </div>
 </p>
 
@@ -341,20 +362,22 @@ Total Experiments :
 <th>Folder</th>
 """
 
-for p in wanted:
-    if p != "FE_lo" and p != "FE_hi":
-        html_text += f"<th>{p}</th>\n"
-    
+    displayed_parameters = [
+        parameter
+        for parameter in WANTED
+        if parameter not in {"FE_lo", "FE_hi"}
+    ]
+    for parameter in displayed_parameters:
+        html_text += f"<th>{html.escape(parameter)}</th>\n"
 
+    html_text += "<th>T_FE</th>"
+    html_text += "<th>Start Time</th>"
+    html_text += "<th>End Time</th>"
+    html_text += "<th>Elapsed</th>"
+    for title in IMAGE_FILES:
+        html_text += f"<th>{html.escape(title)}</th>"
 
-html_text += "<th>T_FE</th>"
-html_text += "<th>Start Time</th>"
-html_text += "<th>End Time</th>"
-html_text += "<th>Elapsed</th>"
-for title in IMAGE_FILES:
-    html_text += f"<th>{title}</th>"
-
-html_text += """
+    html_text += """
 </tr>
 
 </thead>
@@ -362,50 +385,55 @@ html_text += """
 <tbody id="exp_table">
 """
 
-for r in rows:
+    for row in rows:
+        html_text += "<tr>"
+        html_text += f"<td>{html.escape(str(row['folder']))}</td>"
 
-    html_text += "<tr>"
+        params = row["params"]
+        assert isinstance(params, dict)
+        for parameter in displayed_parameters:
+            text_value = format_parameter(params.get(parameter))
+            html_text += f"<td>{html.escape(text_value)}</td>"
 
-    html_text += f"<td>{html.escape(r['folder'])}</td>"
+        html_text += f"<td>{html.escape(format_parameter(row['tfe']))}</td>"
+        html_text += f"<td>{html.escape(format_plain(row['Start Time']))}</td>"
+        html_text += f"<td>{html.escape(format_plain(row['End Time']))}</td>"
+        html_text += f"<td>{html.escape(format_plain(row['Elapsed']))}</td>"
 
-    for p in wanted:
-        if p == "FE_lo" or p == "FE_hi":
-            continue
-        value = r["params"].get(p)
-
-        if isinstance(value, list):
-            txt = " ".join(sci(v) for v in value)
-        elif value is None:
-            txt = ""
-        else:
-            txt = sci(value)
-
-        html_text += f"<td>{txt}</td>"
-
-    html_text += f"<td>{sci(r['tfe'])}</td>"
-    html_text += f"<td>{r['Start Time']}</td>"
-    html_text += f"<td>{r['End Time']}</td>"
-    html_text += f"<td>{r['Elapsed']}</td>"
-
-    for key in IMAGE_FILES:
-        img = r[key]
-
-        if img:
-            rel = img.as_posix()
-
-            html_text += f"""
+        for title in IMAGE_FILES:
+            image = row[title]
+            if isinstance(image, Path):
+                href = html.escape(image_href(image, output_path), quote=True)
+                html_text += f"""
 <td>
-<a href="{rel}" target="_blank">
-<img src="{rel}">
+<a href="{href}" target="_blank">
+<img src="{href}">
 </a>
 </td>
 """
+            else:
+                html_text += "<td>No Image</td>"
+
+        html_text += "</tr>"
+
+    column_indexes = {
+        parameter: index
+        for index, parameter in enumerate(displayed_parameters, start=1)
+    }
+    tfe_index = len(displayed_parameters) + 1
+    js_row_fields = []
+    for parameter, index in column_indexes.items():
+        if parameter == "landau_consistency_pass":
+            expression = (
+                f'cells[{index}].textContent.trim() === "True" ? 1 : 0'
+            )
         else:
-            html_text += "<td>No Image</td>"
+            expression = f"Number(cells[{index}].textContent)"
+        js_row_fields.append(f"            {parameter}: {expression}")
+    js_row_fields.append(f"            T_FE: Number(cells[{tfe_index}].textContent)")
+    js_row_mapping = ",\n".join(js_row_fields)
 
-    html_text += "</tr>"
-
-html_text += """
+    script = """
 
 </tbody>
 
@@ -446,24 +474,10 @@ function updateTable() {
             return;
         }
 
-        // 每列資料
         const row = {
-            folder : cells[0].textContent.trim(),
-            alpha  : Number(cells[1].textContent),
-            beta   : Number(cells[2].textContent),
-            gamma  : Number(cells[3].textContent),
-            BigGamma: Number(cells[4].textContent),
-            g11    : Number(cells[5].textContent),
-            g44    : Number(cells[6].textContent),
-            Ec     : Number(cells[7].textContent),
-            Pr     : Number(cells[8].textContent),
-            Pc0    : Number(cells[9].textContent),
-            rp     : Number(cells[10].textContent),
-            landau_consistency_pass: cells[11].textContent.trim() === "True",
-            T_FE   : Number(cells[12].textContent),
+__JS_ROW_MAPPING__
         };
 
-        // 沒輸入任何條件 → 全部顯示
         let show = true;
 
         for (const c of conditions) {
@@ -518,10 +532,54 @@ updateTable();
 </body>
 
 </html>
-
 """
+    html_text += script.replace("__JS_ROW_MAPPING__", js_row_mapping)
 
-with open("index.html", "w", encoding="utf8") as f:
-    f.write(html_text)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(html_text, encoding="utf-8")
 
-print(f"Generated index.html ({len(rows)} experiments)")
+
+def build_dashboard(
+    excel_path: str | Path = DEFAULT_EXCEL_NAME,
+    *,
+    data_root: str | Path = Path.cwd(),
+    output_path: str | Path = DEFAULT_OUTPUT_NAME,
+    sheet_name: str = DEFAULT_SHEET_NAME,
+) -> int:
+    """Read one Excel workbook and create the corresponding dashboard."""
+
+    excel = Path(excel_path).expanduser().resolve()
+    root = Path(data_root).expanduser().resolve()
+    output = Path(output_path).expanduser().resolve()
+
+    if not excel.is_file():
+        raise FileNotFoundError(f"Workbook does not exist: {excel}")
+    if not root.is_dir():
+        raise NotADirectoryError(f"Data root does not exist: {root}")
+
+    rows = read_dashboard_rows(excel, root, sheet_name)
+    render_dashboard(rows, output)
+    print(f"Generated {output} ({len(rows)} experiments)")
+    return len(rows)
+
+
+def main() -> int:
+    args = parse_args()
+    data_root = args.data_root.expanduser().resolve()
+    excel_path = resolve_under_root(args.excel.expanduser(), data_root).resolve()
+    output_path = resolve_under_root(args.output.expanduser(), data_root).resolve()
+
+    try:
+        build_dashboard(
+            excel_path,
+            data_root=data_root,
+            output_path=output_path,
+            sheet_name=args.sheet,
+        )
+    except (FileNotFoundError, NotADirectoryError, KeyError, ValueError) as exc:
+        raise SystemExit(f"ERROR: {exc}") from exc
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
