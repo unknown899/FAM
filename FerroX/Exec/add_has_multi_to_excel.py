@@ -523,9 +523,9 @@ def format_result(case_name: str, result: has_multi.MultiResult) -> str:
     assert result.p_max is not None
     assert result.variation is not None
     return (
-        f"{case_name}: has_multi=1 | voltage_index={result.voltage_index}, "
+        f"{case_name}: has_multi={result.has_multi} | voltage_index={result.voltage_index}, "
         f"P_min={result.p_min:.8g}, P_max={result.p_max:.8g}, "
-        f"variation={result.variation:.8g}"
+        f"variation={result.variation:.8g}" 
     )
 
 

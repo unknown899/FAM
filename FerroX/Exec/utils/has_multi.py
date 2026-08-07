@@ -72,7 +72,7 @@ class MultiAnalyzer:
             raise ValueError("npz_key must be a non-empty string")
 
     def analyze_pz_stack(self, pz_stack: np.ndarray) -> MultiResult:
-        """Return whether any voltage/z slice passes both tests."""
+        """Count voltage points having at least one mixed-domain z slice."""
 
         stack = np.asarray(pz_stack)
 
@@ -92,6 +92,10 @@ class MultiAnalyzer:
             z_indices = (self.z_index,)
 
         found_finite_value = False
+        multi_voltage_count = 0
+
+        # 保留第一個通過的 slice，供輸出詳細資訊使用
+        first_match: tuple[int, int, float, float] | None = None
 
         for voltage_index in range(stack.shape[0]):
             for z_index in z_indices:
@@ -118,20 +122,36 @@ class MultiAnalyzer:
                     and p_max > 0
                     and p_min < 0
                 ):
-                    return MultiResult(
-                        has_multi=1,
-                        voltage_index=voltage_index,
-                        z_index=z_index,
-                        p_min=p_min,
-                        p_max=p_max,
-                    )
+                    multi_voltage_count += 1
+
+                    if first_match is None:
+                        first_match = (
+                            voltage_index,
+                            z_index,
+                            p_min,
+                            p_max,
+                        )
+
+                    # 此 voltage 已確定有 MD，不再檢查其他 z
+                    break
 
         if not found_finite_value:
             raise ValueError(
                 "No finite value exists in any selected Pz_stack slice."
             )
 
-        return MultiResult(has_multi=0)
+        if first_match is None:
+            return MultiResult(has_multi=0)
+
+        voltage_index, z_index, p_min, p_max = first_match
+
+        return MultiResult(
+            has_multi=multi_voltage_count,
+            voltage_index=voltage_index,
+            z_index=z_index,
+            p_min=p_min,
+            p_max=p_max,
+        )
 
     def analyze_npz(self, npz_path: str | Path) -> MultiResult:
         """Load ``npz_key`` from one NPZ file and analyze its Pz stack."""
