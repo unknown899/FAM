@@ -3,8 +3,8 @@
 
 Main features
 -------------
-1. Sample intrinsic ``(Ec, Pr, rp)`` inside user-supplied bounds using random
-   uniform, Latin-hypercube, or maximin-augmentation designs.
+1. Sample intrinsic ``(Ec, Pr, rp)`` using reusable global designs
+   (uniform/LHS/Sobol/maximin) or local EPR variation around an anchor.
 2. Convert every EPR point to sixth-order Landau ``(alpha, beta, gamma)`` and
    write the rounded coefficients used by FerroX.
 3. Reject an EPR combination already present at the same ferroelectric
@@ -38,12 +38,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
-try:
-    import numpy as np
-except ImportError as exc:  # pragma: no cover - environment-dependent
-    raise SystemExit(
-        "NumPy is required. Activate the FerroX Conda environment first."
-    ) from exc
 
 try:
     from openpyxl import load_workbook
@@ -65,6 +59,21 @@ except ImportError as exc:  # pragma: no cover - environment-dependent
     raise SystemExit(
         "Cannot import utils.landau_EPR_transformer. "
         "Place landau_EPR_transformer.py in ./utils beside this script."
+    ) from exc
+
+try:
+    from utils.sampling_method import (
+        EPRBounds,
+        EPRPoint,
+        GLOBAL_DESIGNS,
+        VARIATION_MODES,
+        VariationSpec,
+        sample_epr_points,
+    )
+except ImportError as exc:  # pragma: no cover - environment-dependent
+    raise SystemExit(
+        "Cannot import utils.sampling_method. "
+        "Place sampling_method.py in ./utils beside this script."
     ) from exc
 
 
@@ -363,34 +372,16 @@ def candidate_key(candidate: Candidate) -> tuple[float, float, float]:
 
 
 # -----------------------------------------------------------------------------
-# Sampling
+# Sampling bridge: physics/domain checks stay here; generic designs live in
+# utils/sampling_method.py.
 # -----------------------------------------------------------------------------
-def lhs_unit(n_samples: int, dimensions: int, rng: np.random.Generator) -> np.ndarray:
-    """Dependency-free Latin-hypercube points in [0, 1)."""
-    points = np.empty((n_samples, dimensions), dtype=float)
-    for dimension in range(dimensions):
-        values = (np.arange(n_samples) + rng.random(n_samples)) / n_samples
-        rng.shuffle(values)
-        points[:, dimension] = values
-    return points
-
 def validate_epr_sampling_bounds(
     ec_bounds: tuple[float, float],
     pr_bounds: tuple[float, float],
     rp_bounds: tuple[float, float],
 ) -> None:
-    for name, bounds in (
-        ("Ec", ec_bounds),
-        ("Pr", pr_bounds),
-        ("rp", rp_bounds),
-    ):
-        low, high = bounds
-        if not (math.isfinite(low) and math.isfinite(high)):
-            raise ValueError(f"{name} bounds must be finite; got {bounds}")
-        if low <= 0.0 or high <= low:
-            raise ValueError(
-                f"{name} bounds must satisfy 0 < LOW < HIGH; got {bounds}"
-            )
+    bounds = EPRBounds(ec=ec_bounds, pr=pr_bounds, rp=rp_bounds)
+    bounds.validate_positive()
 
     valid_rp_low = FIRST_ORDER_RP_BOUNDS[0]
     valid_rp_high = SECOND_ORDER_RP_BOUNDS[1]
@@ -400,53 +391,6 @@ def validate_epr_sampling_bounds(
             f"branch ({valid_rp_low:.12g}, {valid_rp_high:.12g}); "
             f"got {rp_bounds}"
         )
-
-
-def scale_unit_value(
-    unit_value: float,
-    bounds: tuple[float, float],
-    scale: str,
-) -> float:
-    low, high = bounds
-    if scale == "linear":
-        return low + unit_value * (high - low)
-    if scale == "log":
-        return math.exp(
-            math.log(low)
-            + unit_value * (math.log(high) - math.log(low))
-        )
-    raise ValueError(f"Unknown sampling scale: {scale!r}")
-
-
-def normalize_value(
-    value: float,
-    bounds: tuple[float, float],
-    scale: str,
-) -> float:
-    low, high = bounds
-    if scale == "linear":
-        return (value - low) / (high - low)
-    if scale == "log":
-        return (
-            (math.log(value) - math.log(low))
-            / (math.log(high) - math.log(low))
-        )
-    raise ValueError(f"Unknown sampling scale: {scale!r}")
-
-
-def unit_point_to_epr(
-    point: np.ndarray,
-    ec_bounds: tuple[float, float],
-    pr_bounds: tuple[float, float],
-    rp_bounds: tuple[float, float],
-    ec_scale: str,
-    pr_scale: str,
-) -> tuple[float, float, float]:
-    return (
-        scale_unit_value(float(point[0]), ec_bounds, ec_scale),
-        scale_unit_value(float(point[1]), pr_bounds, pr_scale),
-        scale_unit_value(float(point[2]), rp_bounds, "linear"),
-    )
 
 
 def make_epr_candidate(
@@ -484,73 +428,8 @@ def make_epr_candidate(
     )
 
 
-def normalized_epr(
-    Ec: float,
-    Pr: float,
-    rp: float,
-    ec_bounds: tuple[float, float],
-    pr_bounds: tuple[float, float],
-    rp_bounds: tuple[float, float],
-    ec_scale: str,
-    pr_scale: str,
-) -> np.ndarray:
-    return np.asarray(
-        [
-            normalize_value(Ec, ec_bounds, ec_scale),
-            normalize_value(Pr, pr_bounds, pr_scale),
-            normalize_value(rp, rp_bounds, "linear"),
-        ],
-        dtype=float,
-    )
-
-
-def minimum_squared_distances(
-    points: np.ndarray,
-    references: np.ndarray,
-) -> np.ndarray:
-    """Return each point's nearest-reference distance without a huge matrix."""
-    if len(references) == 0:
-        return np.full(len(points), np.inf, dtype=float)
-
-    result = np.full(len(points), np.inf, dtype=float)
-    point_chunk_size = 2048
-    reference_chunk_size = 128
-
-    for point_start in range(0, len(points), point_chunk_size):
-        point_stop = min(point_start + point_chunk_size, len(points))
-        point_chunk = points[point_start:point_stop]
-        local_minimum = np.full(len(point_chunk), np.inf, dtype=float)
-
-        for reference_start in range(
-            0,
-            len(references),
-            reference_chunk_size,
-        ):
-            reference_stop = min(
-                reference_start + reference_chunk_size,
-                len(references),
-            )
-            differences = (
-                point_chunk[:, np.newaxis, :]
-                - references[np.newaxis, reference_start:reference_stop, :]
-            )
-            squared = np.einsum(
-                "ijk,ijk->ij",
-                differences,
-                differences,
-            )
-            local_minimum = np.minimum(
-                local_minimum,
-                np.min(squared, axis=1),
-            )
-
-        result[point_start:point_stop] = local_minimum
-
-    return result
-
-
 def generate_candidates(
-    count: int,
+    count: int | None,
     existing_records: list[dict[str, float]],
     t_fe_m: float,
     seed: int,
@@ -561,211 +440,105 @@ def generate_candidates(
     ec_scale: str = "linear",
     pr_scale: str = "linear",
     maximin_pool_size: int | None = None,
-    max_abs_alpha: float | None = None,  # 新增
+    max_abs_alpha: float | None = None,
+    variation_spec: VariationSpec | None = None,
 ) -> list[Candidate]:
+    """Generate FerroX-ready candidates via the reusable sampling module.
+
+    ``utils.sampling_method`` owns the geometry of uniform/LHS/Sobol/maximin
+    and local variation.  This wrapper owns FerroX-specific conversion,
+    coefficient rounding, |alpha| filtering, and Excel duplicate rejection.
+    """
     if max_abs_alpha is not None and max_abs_alpha <= 0:
-        raise ValueError("max_abs_alpha must be positive.")
-    if count <= 0:
-        raise ValueError("count must be positive")
-    if design not in {"uniform", "lhs", "maximin"}:
-        raise ValueError(
-            f"Unknown design {design!r}; choose uniform, lhs, or maximin"
-        )
+        raise ValueError("max_abs_alpha must be positive")
 
-    validate_epr_sampling_bounds(
-        ec_bounds,
-        pr_bounds,
-        rp_bounds,
-    )
-    rng = np.random.default_rng(seed)
-    accepted: list[Candidate] = []
-    accepted_keys: set[tuple[float, float, float]] = set()
+    validate_epr_sampling_bounds(ec_bounds, pr_bounds, rp_bounds)
+    bounds = EPRBounds(ec=ec_bounds, pr=pr_bounds, rp=rp_bounds)
 
-    def try_add(candidate: Candidate) -> bool:
-        key = candidate_key(candidate)
-        if key in accepted_keys:
+    # Maximin needs only same-thickness records as reference geometry.  Points
+    # outside the active global/local box are ignored inside sampling_method.
+    reference_points: list[tuple[float, float, float]] = []
+    for record in existing_records:
+        try:
+            if not thicknesses_close(t_fe_m, record["t_fe"]):
+                continue
+            reference_points.append(
+                (float(record["ec"]), float(record["pr"]), float(record["rp"]))
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+
+    candidate_cache: dict[tuple[float, float, float], Candidate] = {}
+    seen_candidate_keys: set[tuple[float, float, float]] = set()
+    rejected = {
+        "conversion": 0,
+        "max_abs_alpha": 0,
+        "existing_duplicate": 0,
+        "rounded_duplicate": 0,
+    }
+
+    def accept_point(point: EPRPoint) -> bool:
+        raw_key = point.as_tuple()
+        try:
+            candidate = make_epr_candidate(
+                Ec=point.Ec,
+                Pr=point.Pr,
+                rp=point.rp,
+                design=point.design,
+            )
+        except (ArithmeticError, OverflowError, ValueError):
+            rejected["conversion"] += 1
             return False
-        if is_existing_duplicate(
-            candidate,
-            existing_records,
-            t_fe_m,
-        ):
+
+        if max_abs_alpha is not None and abs(candidate.alpha) > max_abs_alpha:
+            rejected["max_abs_alpha"] += 1
             return False
 
-        accepted.append(candidate)
-        accepted_keys.add(key)
+        if is_existing_duplicate(candidate, existing_records, t_fe_m):
+            rejected["existing_duplicate"] += 1
+            return False
+
+        rounded_key = candidate_key(candidate)
+        if rounded_key in seen_candidate_keys:
+            rejected["rounded_duplicate"] += 1
+            return False
+
+        seen_candidate_keys.add(rounded_key)
+        candidate_cache[raw_key] = candidate
         return True
 
-    def convert_point(point: np.ndarray, label: str) -> Candidate:
-        Ec, Pr, rp = unit_point_to_epr(
-            point,
-            ec_bounds,
-            pr_bounds,
-            rp_bounds,
-            ec_scale,
-            pr_scale,
-        )
-        candidate = make_epr_candidate(
-            Ec=Ec,
-            Pr=Pr,
-            rp=rp,
-            design=label,
-        )
+    sampled_points = sample_epr_points(
+        count=count,
+        design=design,
+        bounds=bounds,
+        ec_scale=ec_scale,
+        pr_scale=pr_scale,
+        seed=seed,
+        reference_points=reference_points,
+        maximin_pool_size=maximin_pool_size,
+        variation=variation_spec,
+        accept=accept_point,
+    )
 
-        if (
-            max_abs_alpha is not None
-            and abs(candidate.alpha) > max_abs_alpha
-        ):
-            raise ValueError(
-                f"|alpha|={abs(candidate.alpha):.6e} exceeds "
-                f"max_abs_alpha={max_abs_alpha:.6e}"
-            )
+    candidates = [candidate_cache[point.as_tuple()] for point in sampled_points]
 
-        return candidate
-
-    if design in {"uniform", "lhs"}:
-        attempts = 0
-        max_attempts = max(10_000, count * 2_000)
-
-        while len(accepted) < count and attempts < max_attempts:
-            remaining = count - len(accepted)
-            batch_size = max(remaining * 4, 32)
-            if design == "uniform":
-                unit_points = rng.random((batch_size, len(EPR_PARAMETERS)))
-            else:
-                unit_points = lhs_unit(
-                    batch_size,
-                    len(EPR_PARAMETERS),
-                    rng,
-                )
-
-            for point in unit_points:
-                attempts += 1
-                try:
-                    try_add(convert_point(point, design))
-                except (ArithmeticError, OverflowError, ValueError):
-                    pass
-
-                if len(accepted) >= count or attempts >= max_attempts:
-                    break
-
-    else:
-        if maximin_pool_size is None:
-            pool_size = max(4096, count * 50)
-        else:
-            pool_size = maximin_pool_size
-            if pool_size < count:
-                raise ValueError(
-                    "maximin_pool_size must be at least count; "
-                    f"got {pool_size} < {count}"
-                )
-
-        unit_pool = lhs_unit(
-            pool_size,
-            len(EPR_PARAMETERS),
-            rng,
-        )
-        pool_candidates: list[Candidate] = []
-        pool_points: list[np.ndarray] = []
-        pool_keys: set[tuple[float, float, float]] = set()
-
-        for point in unit_pool:
-            try:
-                candidate = convert_point(point, "maximin")
-            except (ArithmeticError, OverflowError, ValueError):
-                continue
-
-            key = candidate_key(candidate)
-            if key in pool_keys:
-                continue
-            pool_keys.add(key)
-            pool_candidates.append(candidate)
-            pool_points.append(
-                normalized_epr(
-                    candidate.Ec,
-                    candidate.Pr,
-                    candidate.rp,
-                    ec_bounds,
-                    pr_bounds,
-                    rp_bounds,
-                    ec_scale,
-                    pr_scale,
-                )
-            )
-
-        if len(pool_candidates) < count:
-            raise RuntimeError(
-                f"Only {len(pool_candidates)} valid maximin pool points "
-                f"were generated for count={count}. Increase --maximin-pool-size."
-            )
-
-        existing_points: list[np.ndarray] = []
-        for record in existing_records:
-            try:
-                if not thicknesses_close(t_fe_m, record["t_fe"]):
-                    continue
-                point = normalized_epr(
-                    record["ec"],
-                    record["pr"],
-                    record["rp"],
-                    ec_bounds,
-                    pr_bounds,
-                    rp_bounds,
-                    ec_scale,
-                    pr_scale,
-                )
-            except (KeyError, ValueError):
-                continue
-
-            # Outside points cannot duplicate a candidate and should not
-            # distort the space-filling distance criterion.
-            if np.all((-1.0e-12 <= point) & (point <= 1.0 + 1.0e-12)):
-                existing_points.append(point)
-
-        pool_array = np.asarray(pool_points, dtype=float)
-        reference_array = np.asarray(
-            existing_points,
-            dtype=float,
-        ).reshape(-1, 3)
-        nearest_distance = minimum_squared_distances(
-            pool_array,
-            reference_array,
-        )
-        available = np.ones(len(pool_candidates), dtype=bool)
-
+    if design == "maximin" or (
+        design == "variation"
+        and variation_spec is not None
+        and variation_spec.mode == "maximin"
+    ):
         print(
-            f"Maximin pool: {len(pool_candidates)} valid points; "
-            f"{len(existing_points)} existing points at "
-            f"t_FE={t_fe_m * 1e9:.6g} nm inside the requested bounds"
+            f"Maximin reference set: {len(reference_points)} existing points "
+            f"at t_FE={t_fe_m * 1e9:.6g} nm"
         )
 
-        while len(accepted) < count and np.any(available):
-            scores = np.where(available, nearest_distance, -np.inf)
-            selected_index = int(np.argmax(scores))
-            available[selected_index] = False
-            candidate = pool_candidates[selected_index]
-
-            if not try_add(candidate):
-                continue
-
-            selected_point = pool_array[selected_index]
-            squared_to_selected = np.sum(
-                (pool_array - selected_point) ** 2,
-                axis=1,
-            )
-            nearest_distance = np.minimum(
-                nearest_distance,
-                squared_to_selected,
-            )
-
-    if len(accepted) != count:
-        raise RuntimeError(
-            f"Could generate only {len(accepted)} unique EPR cases out of "
-            f"{count}. Increase --maximin-pool-size, change the seed, or "
-            "expand the EPR bounds."
+    if any(rejected.values()):
+        summary = ", ".join(
+            f"{name}={value}" for name, value in rejected.items() if value
         )
+        print(f"Sampling rejections while building candidate pool: {summary}")
 
-    return accepted
+    return candidates
 
 
 # -----------------------------------------------------------------------------
@@ -1254,18 +1027,185 @@ def run_batch(
 # -----------------------------------------------------------------------------
 # CLI
 # -----------------------------------------------------------------------------
+EXAMPLES = r"""
+Examples
+========
+Global designs (old behavior remains available)
+-----------------------------------------------
+1) Random uniform in the requested EPR box:
+   python batch_ferrox_epr.py \
+     --template-folder MFIS_t_8_nomi_29 \
+     --prefix MFIS_t_8_epr_uniform --start-index 1 --count 10 \
+     --design uniform \
+     --ec-range 5e7 2e9 --pr-range 0.02 0.5 --rp-range 1.4954 1.7320 \
+     --dry-run
+
+2) Latin hypercube with logarithmic Ec and Pr coordinates:
+   python batch_ferrox_epr.py \
+     --template-folder MFIS_t_8_nomi_29 \
+     --prefix MFIS_t_8_epr_lhs --start-index 1 --count 16 \
+     --design lhs --ec-scale log --pr-scale log \
+     --ec-range 5e7 2e9 --pr-range 0.02 0.5 --rp-range 1.4954 1.7320 \
+     --dry-run
+
+3) Global maximin augmentation.  Existing same-thickness cases are reference
+   points, so the new batch fills large holes instead of merely spacing itself:
+   python batch_ferrox_epr.py \
+     --template-folder MFIS_t_8_nomi_29 \
+     --prefix MFIS_t_8_epr_maximin --start-index 1 --count 10 \
+     --design maximin --ec-scale log --pr-scale log \
+     --ec-range 5e7 2e9 --pr-range 0.02 0.5 --rp-range 1.4954 1.7320 \
+     --maximin-pool-size 10000 --dry-run
+
+4) Sobol low-discrepancy design (requires SciPy):
+   python batch_ferrox_epr.py \
+     --template-folder MFIS_t_8_nomi_29 \
+     --prefix MFIS_t_8_epr_sobol --start-index 1 --count 16 \
+     --design sobol --ec-scale log --pr-scale log \
+     --ec-range 5e7 2e9 --pr-range 0.02 0.5 --rp-range 1.4954 1.7320 \
+     --dry-run
+
+Local EPR variation (recommended for targeted data supplementation)
+-------------------------------------------------------------------
+5) OAT sensitivity study around the template's own nominal EPR.
+   Default spans are Ec +/-10%, Pr +/-10%, rp +/-0.02.  With three parameters
+   and one level this creates 6 deterministic cases, so --count can be omitted:
+   python batch_ferrox_epr.py \
+     --template-folder MFIS_t_8_nomi_29 \
+     --prefix MFIS_t_8_oat --start-index 1 \
+     --design variation --variation-mode oat \
+     --variation-ec-fraction 0.10 --variation-pr-fraction 0.10 \
+     --variation-rp-delta 0.02 \
+     --ec-range 5e7 2e9 --pr-range 0.02 0.5 --rp-range 1.4954 1.7320 \
+     --dry-run
+
+6) Multi-level OAT, e.g. +/-5% and +/-10% for Ec/Pr and proportional rp
+   offsets.  --variation-levels multiplies the configured span.  Here levels
+   0.5 and 1.0 produce 12 perturbed cases; --variation-include-center adds the
+   anchor for a total of 13 (unless a point is rejected as an existing case):
+   python batch_ferrox_epr.py \
+     --template-folder MFIS_t_8_nomi_29 \
+     --prefix MFIS_t_8_oat2 --start-index 1 \
+     --design variation --variation-mode oat \
+     --variation-levels 0.5 1.0 --variation-include-center \
+     --variation-ec-fraction 0.10 --variation-pr-fraction 0.10 \
+     --variation-rp-delta 0.02 \
+     --ec-range 5e7 2e9 --pr-range 0.02 0.5 --rp-range 1.4954 1.7320 \
+     --dry-run
+
+7) Vary only rp around an explicit bad-case anchor.  This is useful when the
+   inverse model has a localized rp error and you first want a clean sensitivity
+   experiment rather than a 3-D training-data fill:
+   python batch_ferrox_epr.py \
+     --template-folder MFIS_t_8_nomi_29 \
+     --prefix MFIS_t_8_rp_oat --start-index 1 \
+     --design variation --variation-mode oat \
+     --variation-anchor 1.4e9 0.39 1.62 \
+     --variation-parameters rp --variation-levels 0.5 1.0 \
+     --variation-rp-delta 0.024 \
+     --ec-range 5e7 2e9 --pr-range 0.02 0.5 --rp-range 1.4954 1.7320 \
+     --dry-run
+
+8) Local joint LHS around an explicit anchor.  Unlike OAT, all EPR coordinates
+   vary together and therefore this is appropriate for adding training data
+   after the local sensitivity test says the region is identifiable:
+   python batch_ferrox_epr.py \
+     --template-folder MFIS_t_8_nomi_29 \
+     --prefix MFIS_t_8_local_lhs --start-index 1 --count 10 \
+     --design variation --variation-mode lhs \
+     --variation-anchor 1.4e9 0.39 1.62 \
+     --variation-ec-fraction 0.15 --variation-pr-fraction 0.15 \
+     --variation-rp-delta 0.03 \
+     --ec-scale log --pr-scale log \
+     --ec-range 5e7 2e9 --pr-range 0.02 0.5 --rp-range 1.4954 1.7320 \
+     --dry-run
+
+9) Local maximin around a bad-case anchor.  This is the recommended small-batch
+   "fill this local hole" mode: the candidate pool is local, while existing
+   same-thickness points still repel the new selections:
+   python batch_ferrox_epr.py \
+     --template-folder MFIS_t_8_nomi_29 \
+     --prefix MFIS_t_8_local_maximin --start-index 1 --count 8 \
+     --design variation --variation-mode maximin \
+     --variation-anchor 6.2e8 0.20 1.72 \
+     --variation-ec-fraction 0.20 --variation-pr-fraction 0.20 \
+     --variation-rp-delta 0.012 \
+     --ec-scale log --pr-scale log --maximin-pool-size 10000 \
+     --ec-range 5e7 2e9 --pr-range 0.02 0.5 --rp-range 1.4954 1.7320 \
+     --dry-run
+
+10) Specify rp span as a fraction of the FULL --rp-range instead of an absolute
+    delta.  For example 0.05 means +/-5% of the full rp interval around anchor:
+    python batch_ferrox_epr.py \
+      --template-folder MFIS_t_8_nomi_29 \
+      --prefix MFIS_t_8_local_sobol --start-index 1 --count 8 \
+      --design variation --variation-mode sobol \
+      --variation-rp-range-fraction 0.05 \
+      --ec-range 5e7 2e9 --pr-range 0.02 0.5 --rp-range 1.4954 1.7320 \
+      --dry-run
+
+Multiple template folders
+-------------------------
+11) Apply the same sampling command to several thickness templates.  If
+    --variation-anchor is omitted, each template uses its own nominal EPR as
+    the local anchor.  If an explicit anchor is supplied, the same EPR anchor
+    is used for every thickness:
+    python batch_ferrox_epr.py \
+      --template-folder MFIS_t_5_nomi_29 MFIS_t_6_nomi_29 MFIS_t_7_nomi_29 MFIS_t_8_nomi_29 \
+      --prefix local --start-index 1 --count 6 \
+      --design variation --variation-mode lhs \
+      --variation-anchor 6.2e8 0.20 1.72 \
+      --variation-ec-fraction 0.10 --variation-pr-fraction 0.10 \
+      --variation-rp-delta 0.01 \
+      --ec-range 5e7 2e9 --pr-range 0.02 0.5 --rp-range 1.4954 1.7320 \
+      --dry-run
+
+Python API
+----------
+Sampling geometry is reusable without FerroX:
+
+    from utils.sampling_method import EPRBounds, VariationSpec, sample_epr_points
+
+    bounds = EPRBounds(
+        ec=(5e7, 2e9),
+        pr=(0.02, 0.5),
+        rp=(1.4954, 1.7320),
+    )
+    spec = VariationSpec(
+        anchor=(1.4e9, 0.39, 1.62),
+        mode="lhs",
+        ec_fraction=0.15,
+        pr_fraction=0.15,
+        rp_delta=0.03,
+    )
+    points = sample_epr_points(
+        count=10,
+        design="variation",
+        bounds=bounds,
+        ec_scale="log",
+        pr_scale="log",
+        seed=20260712,
+        variation=spec,
+    )
+"""
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
-            "Sample intrinsic Ec/Pr/rp, convert to Landau coefficients, "
-            "and optionally run a FerroX batch."
+            "Sample intrinsic Ec/Pr/rp, convert to Landau coefficients, and "
+            "optionally run a FerroX batch. Sampling implementations live in "
+            "./utils/sampling_method.py so notebooks and other scripts can "
+            "reuse exactly the same designs."
         ),
+        epilog=EXAMPLES,
     )
     parser.add_argument(
         "--exec-dir",
         type=Path,
         default=Path("/home/bowei/FAM/FerroX/Exec"),
+        help="FerroX Exec directory. Default: %(default)s",
     )
     parser.add_argument(
         "--template-folder",
@@ -1273,15 +1213,15 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help=(
             "One or more template folders supplying inputs and structure. "
-            "When multiple folders are supplied, --prefix is appended "
-            "to each template-folder name."
+            "When multiple folders are supplied, --prefix is appended to each "
+            "template-folder name."
         ),
     )
     parser.add_argument(
         "--notebook-template-folder",
         default=None,
         help=(
-            "Optional folder supplying only the notebook. When omitted, "
+            "Optional folder supplying only the notebook. When omitted, each "
             "--template-folder supplies both inputs and notebook."
         ),
     )
@@ -1293,37 +1233,48 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--notebook-name",
         default="analyze.ipynb",
-        help="Notebook filename created inside every new case.",
+        help="Notebook filename created inside every new case. Default: %(default)s",
     )
     parser.add_argument(
         "--prefix",
         default="",
-        help="Folder name prefix, for example MFIS_t_7_nomi. Default: empty string.",
+        help="Folder name prefix/suffix. Example: MFIS_t_7_epr. Default: empty.",
     )
     parser.add_argument(
         "--start-index",
         required=True,
         type=int,
-        help="The first created suffix. Use 18 to create ..._18 first.",
+        help="The first created numeric suffix. Use 18 to create ..._18 first.",
     )
-    parser.add_argument("--count", required=True, type=int)
+    parser.add_argument(
+        "--count",
+        type=int,
+        default=None,
+        help=(
+            "Number of cases. Required for global and joint-variation designs. "
+            "For variation/oat it is normally omitted because OAT count is "
+            "determined by --variation-parameters, --variation-levels and "
+            "--variation-include-center."
+        ),
+    )
     parser.add_argument(
         "--t-fe-nm",
         type=float,
         default=None,
         help=(
-            "Thickness used for Excel duplicate comparison; inferred from "
-            "each template-folder name when omitted."
+            "Thickness used for Excel duplicate comparison; inferred from each "
+            "template-folder name when omitted."
         ),
     )
-    parser.add_argument("--seed", type=int, default=20260712)
+    parser.add_argument("--seed", type=int, default=20260712, help="Sampling RNG seed.")
     parser.add_argument(
         "--design",
-        choices=("uniform", "lhs", "maximin"),
+        choices=(*GLOBAL_DESIGNS, "variation"),
         default="maximin",
         help=(
-            "EPR sampling design. maximin selects a space-filling subset "
-            "that stays far from existing points at the same t_FE."
+            "Top-level EPR design. Existing modes uniform/lhs/maximin are kept; "
+            "sobol adds low-discrepancy global sampling; variation activates a "
+            "local study around an anchor. Default: %(default)s"
         ),
     )
     parser.add_argument(
@@ -1332,7 +1283,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         type=float,
         metavar=("LOW", "HIGH"),
-        help="Intrinsic Ec bounds in V/m.",
+        help="Hard global Ec bounds in V/m. Local variation is clipped/checked against them.",
     )
     parser.add_argument(
         "--pr-range",
@@ -1340,7 +1291,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         type=float,
         metavar=("LOW", "HIGH"),
-        help="Positive remanent-polarization bounds in C/m^2.",
+        help="Hard global positive Pr bounds in C/m^2.",
     )
     parser.add_argument(
         "--rp-range",
@@ -1349,60 +1300,151 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         metavar=("LOW", "HIGH"),
         help=(
-            "Bounds for rp=Pr/Pc0. They must lie strictly inside "
-            f"({FIRST_ORDER_RP_BOUNDS[0]:.8g}, "
-            f"{SECOND_ORDER_RP_BOUNDS[1]:.8g})."
+            "Hard global bounds for rp=Pr/Pc0. They must lie strictly inside "
+            f"({FIRST_ORDER_RP_BOUNDS[0]:.8g}, {SECOND_ORDER_RP_BOUNDS[1]:.8g})."
         ),
     )
     parser.add_argument(
         "--ec-scale",
         choices=("linear", "log"),
         default="linear",
-        help="Sampling scale for Ec.",
+        help=(
+            "Coordinate used when sampling/normalizing Ec. For broad ranges, "
+            "--ec-scale log is usually preferable. Default: %(default)s"
+        ),
     )
     parser.add_argument(
         "--pr-scale",
         choices=("linear", "log"),
         default="linear",
-        help="Sampling scale for Pr.",
+        help=(
+            "Coordinate used when sampling/normalizing Pr. For broad positive "
+            "ranges, --pr-scale log is often preferable. Default: %(default)s"
+        ),
     )
     parser.add_argument(
         "--maximin-pool-size",
         type=int,
         default=None,
         help=(
-            "Candidate-pool size for maximin. The automatic value is "
-            "max(4096, 50*count). Larger values improve coverage but cost "
-            "more selection time."
+            "Candidate-pool size for global or local maximin. Automatic value "
+            "is max(4096, 50*count). Larger values improve the discrete search "
+            "at extra CPU cost."
         ),
     )
+
+    variation_group = parser.add_argument_group(
+        "local EPR variation",
+        "Used only with --design variation. The anchor defaults to the EPR "
+        "converted from each template's alpha/beta/gamma.",
+    )
+    variation_group.add_argument(
+        "--variation-mode",
+        choices=VARIATION_MODES,
+        default="oat",
+        help=(
+            "oat = one-at-a-time sensitivity points; uniform/lhs/sobol/maximin "
+            "= joint sampling inside the local variation box. Default: %(default)s"
+        ),
+    )
+    variation_group.add_argument(
+        "--variation-anchor",
+        nargs=3,
+        type=float,
+        metavar=("EC", "PR", "RP"),
+        default=None,
+        help=(
+            "Explicit local anchor (Ec[V/m], Pr[C/m^2], rp). If omitted, each "
+            "template folder's nominal alpha/beta/gamma is converted to EPR and "
+            "used as its anchor."
+        ),
+    )
+    variation_group.add_argument(
+        "--variation-ec-fraction",
+        type=float,
+        default=0.10,
+        help="Ec fractional half-width. 0.10 means anchor Ec +/-10%%. Default: %(default)s",
+    )
+    variation_group.add_argument(
+        "--variation-pr-fraction",
+        type=float,
+        default=0.10,
+        help="Pr fractional half-width. 0.10 means anchor Pr +/-10%%. Default: %(default)s",
+    )
+    rp_span = variation_group.add_mutually_exclusive_group()
+    rp_span.add_argument(
+        "--variation-rp-delta",
+        type=float,
+        default=None,
+        help=(
+            "Absolute rp half-width, e.g. 0.02 means anchor rp +/-0.02. If neither "
+            "rp-span option is given, 0.02 is used."
+        ),
+    )
+    rp_span.add_argument(
+        "--variation-rp-range-fraction",
+        type=float,
+        default=None,
+        help=(
+            "rp half-width as a fraction of the FULL --rp-range width. Example: "
+            "0.05 means +/-5%% of (RP_HIGH-RP_LOW)."
+        ),
+    )
+    variation_group.add_argument(
+        "--variation-parameters",
+        nargs="+",
+        choices=("ec", "pr", "rp"),
+        default=["ec", "pr", "rp"],
+        help=(
+            "Parameters perturbed by OAT. Example: --variation-parameters rp; "
+            "or --variation-parameters ec rp. Ignored by joint variation modes."
+        ),
+    )
+    variation_group.add_argument(
+        "--variation-levels",
+        nargs="+",
+        type=float,
+        default=[1.0],
+        help=(
+            "Positive multipliers for OAT spans. With Ec fraction=0.10, levels "
+            "0.5 1.0 produce +/-5%% and +/-10%% Ec points. Default: %(default)s"
+        ),
+    )
+    variation_group.add_argument(
+        "--variation-include-center",
+        action="store_true",
+        help=(
+            "For OAT, include the anchor itself. Usually unnecessary if the "
+            "anchor already exists in the dataset; duplicate checking may reject it."
+        ),
+    )
+
     parser.add_argument(
         "--dataset",
         type=Path,
         default=Path("/home/bowei/FAM/FerroX/Exec/MFIS_dataset.xlsx"),
+        help="Dataset used for same-thickness EPR duplicate/reference checks. Default: %(default)s",
     )
     parser.add_argument("--dataset-sheet", default="experiments")
     parser.add_argument(
         "--plan-csv-dir",
         type=Path,
         default=Path("epr_plan_csv"),
-        help=(
-            "Relative directory under --exec-dir for batch plan CSV files."
-        ),
+        help="Relative directory under --exec-dir for batch plan CSV files. Default: %(default)s",
     )
     parser.add_argument(
         "--status-csv-dir",
         type=Path,
         default=Path("epr_status_csv"),
         help=(
-            "Relative directory under --exec-dir for combined status CSV "
-            "files. It is created only when --launch is used."
+            "Relative directory under --exec-dir for combined status CSV files. "
+            "Created only with --launch. Default: %(default)s"
         ),
     )
     parser.add_argument(
         "--allow-existing-empty",
         action="store_true",
-        help="Allow a target folder only when it already exists but is completely empty.",
+        help="Allow a target folder only if it already exists and is completely empty.",
     )
     parser.add_argument(
         "--dry-run",
@@ -1417,6 +1459,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--executable",
         default="main3d.gnu.TPROF.MPI.CUDA.ex",
+        help="FerroX executable under --exec-dir. Default: %(default)s",
     )
     parser.add_argument(
         "--execute-notebook",
@@ -1440,15 +1483,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--max-parallel",
         type=int,
         default=None,
-        help="Maximum concurrent simulations; default is the GPU count.",
+        help="Maximum concurrent simulations; default is detected GPU count.",
     )
     parser.add_argument(
         "--max-abs-alpha",
         type=float,
         default=None,
         help=(
-            "Maximum allowed absolute alpha after coefficient rounding. "
-            "Omit to disable this constraint."
+            "Maximum allowed |alpha| after coefficient rounding. Points beyond "
+            "the limit are rejected before final selection. Omit to disable."
         ),
     )
     return parser
@@ -1486,6 +1529,19 @@ def main() -> int:
         pr_bounds,
         rp_bounds,
     )
+
+    if args.count is not None and args.count <= 0:
+        raise ValueError("--count must be positive when supplied")
+    if args.design != "variation" and args.count is None:
+        raise ValueError(f"--design {args.design} requires --count")
+    if (
+        args.design == "variation"
+        and args.variation_mode != "oat"
+        and args.count is None
+    ):
+        raise ValueError(
+            f"--design variation --variation-mode {args.variation_mode} requires --count"
+        )
 
     # Excel 只需要讀一次
     existing_records = load_existing_parameter_sets(
@@ -1592,6 +1648,57 @@ def main() -> int:
             )
             for key in PARAMETERS
         }
+        nominal_epr = landau_to_EPR(**nominal)
+
+        variation_spec: VariationSpec | None = None
+        if args.design == "variation":
+            if args.variation_anchor is None:
+                variation_anchor = (
+                    nominal_epr.Ec,
+                    nominal_epr.Pr,
+                    nominal_epr.rp,
+                )
+                anchor_source = f"template {template_folder}"
+            else:
+                variation_anchor = tuple(float(v) for v in args.variation_anchor)
+                anchor_source = "--variation-anchor"
+
+            global_bounds = EPRBounds(
+                ec=ec_bounds,
+                pr=pr_bounds,
+                rp=rp_bounds,
+            )
+            if not global_bounds.contains(variation_anchor):
+                raise ValueError(
+                    f"Variation anchor {variation_anchor} from {anchor_source} lies "
+                    "outside the hard --ec-range/--pr-range/--rp-range bounds."
+                )
+
+            if args.variation_rp_range_fraction is not None:
+                if args.variation_rp_range_fraction < 0:
+                    raise ValueError("--variation-rp-range-fraction must be >= 0")
+                rp_delta = (
+                    args.variation_rp_range_fraction
+                    * (rp_bounds[1] - rp_bounds[0])
+                )
+            else:
+                rp_delta = (
+                    0.02
+                    if args.variation_rp_delta is None
+                    else args.variation_rp_delta
+                )
+
+            variation_spec = VariationSpec(
+                anchor=variation_anchor,
+                mode=args.variation_mode,
+                ec_fraction=args.variation_ec_fraction,
+                pr_fraction=args.variation_pr_fraction,
+                rp_delta=rp_delta,
+                parameters=tuple(args.variation_parameters),
+                levels=tuple(args.variation_levels),
+                include_center=args.variation_include_center,
+            )
+            variation_spec.validate()
 
         print(f"Exec directory: {exec_dir}")
         print(
@@ -1605,14 +1712,33 @@ def main() -> int:
         )
 
         print(f"Output prefix: {case_prefix}")
-        print(f"Nominal parameters: {nominal}")
+        print(f"Nominal Landau parameters: {nominal}")
+        print(
+            "Nominal EPR: "
+            f"Ec={nominal_epr.Ec:.6e}, "
+            f"Pr={nominal_epr.Pr:.6e}, "
+            f"rp={nominal_epr.rp:.8f}"
+        )
 
         print(
-            "EPR sampling bounds: "
+            "Hard EPR sampling bounds: "
             f"Ec={ec_bounds} V/m ({args.ec_scale}), "
             f"Pr={pr_bounds} C/m^2 ({args.pr_scale}), "
             f"rp={rp_bounds} (linear)"
         )
+        print(f"Sampling design: {args.design}")
+        if variation_spec is not None:
+            print(
+                "Variation: "
+                f"mode={variation_spec.mode}, "
+                f"anchor={variation_spec.anchor}, "
+                f"Ec +/-{100 * variation_spec.ec_fraction:.3g}%, "
+                f"Pr +/-{100 * variation_spec.pr_fraction:.3g}%, "
+                f"rp +/-{variation_spec.rp_delta:.6g}, "
+                f"parameters={variation_spec.parameters}, "
+                f"levels={variation_spec.levels}, "
+                f"include_center={variation_spec.include_center}"
+            )
 
         print(
             "Duplicate-check thickness: "
@@ -1636,7 +1762,8 @@ def main() -> int:
             ec_scale=args.ec_scale,
             pr_scale=args.pr_scale,
             maximin_pool_size=args.maximin_pool_size,
-            max_abs_alpha=args.max_abs_alpha,  # 新增
+            max_abs_alpha=args.max_abs_alpha,
+            variation_spec=variation_spec,
         )
 
         final_index = (
