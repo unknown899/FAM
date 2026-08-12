@@ -32,10 +32,37 @@ WANTED_INPUT_PARAMETERS = {
     "FE_hi",
 }
 
+from functools import lru_cache
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+# 相對路徑一律以這支 script 所在資料夾為基準
+DEFAULT_DATASET_PATH = Path("MFIS_dataset.xlsx")
+
+EXPERIMENT_SHEET = "experiments"
+EXPERIMENT_FOLDER_COLUMN = "folder"
+
+# ============================================================
+# 在這裡手動填入要讀取的 parameter 欄位名稱
+# 名稱必須和 experiments worksheet 的欄名完全相同
+# ============================================================
+WANTED_EXPERIMENT_PARAMETERS: tuple[str, ...] = (
+     "alpha",
+     "beta",
+     "gamma",
+     "Ec",
+     "Pr",
+     "rp",
+)
+
+
 DEFAULT_LEGEND_PARAMETERS = [
-    "alpha",
-    "beta",
-    "gamma",
+    #"alpha",
+    #"beta",
+    #"gamma",
+    "Ec",
+    "Pr",
+    "rp",
 ]
 
 PARAMETER_DISPLAY_NAMES = {
@@ -45,11 +72,121 @@ PARAMETER_DISPLAY_NAMES = {
     "BigGamma": r"$\Gamma$",
     "g11": r"$g_{11}$",
     "g44": r"$g_{44}$",
+    "Ec": r"$E_c$",
+    "Pr": r"$P_r$",
+    "rp": r"$r_p$",
     "FE_lo": "FE_lo",
     "FE_hi": "FE_hi",
     "t_FE": r"$t_{\mathrm{FE}}$",
 }
 
+def resolve_dataset_path(
+    dataset_path: str | Path | None = None,
+) -> Path:
+    """
+    未指定時，使用 script 同資料夾下的 MFIS_dataset.xlsx。
+
+    若傳入相對路徑，例如 data/MFIS_dataset.xlsx，
+    則以 script 所在資料夾為基準。
+    """
+    if dataset_path is None:
+        path = DEFAULT_DATASET_PATH
+    else:
+        path = Path(dataset_path).expanduser()
+
+    if not path.is_absolute():
+        path = SCRIPT_DIR / path
+
+    return path.resolve()
+
+
+@lru_cache(maxsize=None)
+def load_experiments(excel_path: Path) -> pd.DataFrame:
+    """
+    Excel 只讀取一次，避免每處理一個 folder 就重新讀取整份檔案。
+    """
+    return pd.read_excel(
+        excel_path,
+        sheet_name=EXPERIMENT_SHEET,
+    )
+
+
+def read_experiment_parameters(
+    folder_name: str,
+    dataset_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """
+    從 MFIS_dataset.xlsx 的 experiments worksheet，
+    讀取指定 folder 對應的參數。
+    """
+    parameters: dict[str, Any] = {}
+
+    excel_path = resolve_dataset_path(dataset_path)
+
+    if not excel_path.is_file():
+        print(
+            f"[WARNING] Dataset does not exist: {excel_path}",
+            file=sys.stderr,
+        )
+        return parameters
+
+    experiments = load_experiments(excel_path)
+
+    required_columns = {
+        EXPERIMENT_FOLDER_COLUMN,
+        *WANTED_EXPERIMENT_PARAMETERS,
+    }
+    missing_columns = sorted(
+        required_columns - set(experiments.columns)
+    )
+
+    if missing_columns:
+        raise KeyError(
+            "The following columns do not exist in "
+            f"{excel_path.name}/{EXPERIMENT_SHEET}: "
+            f"{missing_columns}"
+        )
+
+    folder_mask = (
+        experiments[EXPERIMENT_FOLDER_COLUMN]
+        .astype("string")
+        .str.strip()
+        .eq(str(folder_name).strip())
+        .fillna(False)
+    )
+
+    matched_rows = experiments.loc[folder_mask]
+
+    if matched_rows.empty:
+        print(
+            f"[WARNING] Folder not found in Excel: {folder_name}",
+            file=sys.stderr,
+        )
+        return parameters
+
+    if len(matched_rows) > 1:
+        raise ValueError(
+            f"Folder {folder_name!r} appears "
+            f"{len(matched_rows)} times in the experiments worksheet."
+        )
+
+    row = matched_rows.iloc[0]
+
+    for parameter_name in WANTED_EXPERIMENT_PARAMETERS:
+        value = row[parameter_name]
+        #print(f"[DEBUG] {folder_name}: {parameter_name} = {value}")
+
+        # 空白 Excel cell 不放入 parameters
+        if pd.isna(value):
+            continue
+
+        # 將 numpy scalar 轉成一般 Python scalar
+        if hasattr(value, "item"):
+            value = value.item()
+
+        parameters[parameter_name] = value
+
+    return parameters
 
 # ============================================================
 # Voltage sequence
@@ -609,11 +746,16 @@ def plot_overlay(
                 csv_path=csv_path,
                 use_csv_voltage=use_csv_voltage,
             )
-
+            '''
             parameters = read_inputs_parameters(
                 inputs_path,
             )
-
+            '''
+            parameters = read_experiment_parameters(
+                folder_name=case_dir.name,
+                dataset_path="./MFIS_dataset.xlsx",
+            )
+            #print(f"[INFO] {case_dir.name}: Read parameters: {parameters}")
             label = make_legend_label(
                 case_dir=case_dir,
                 root=root,
