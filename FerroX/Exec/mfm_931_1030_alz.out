@@ -1,0 +1,2826 @@
+[NbConvertApp] Converting notebook MFM_t_8_mxi_931/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+from pathlib import Path
+import yt
+
+
+plot_paths = sorted([p for p in PLOT_DIR.glob(f"{PLOT_PREFIX}*") if p.is_dir()])
+
+# 只要名稱 (plt000100, ...)
+plot_names = [p.name for p in plot_paths]
+
+print("Available plotfiles:")
+for name in plot_names:
+    print("  ", name)
+    
+print(len(plot_names), "plotfiles found in", PLOT_DIR)
+PLOTFILE_NAME = plot_names[30] 
+
+------------------
+
+----- stdout -----
+Available plotfiles:
+   plt00000000
+   plt00000195
+   plt00000258
+   plt00000422
+   plt00000648
+   plt00000960
+   plt00001432
+   plt00001462
+   plt00001513
+   plt00001656
+10 plotfiles found in plts
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mIndexError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[4][39m[32m, line 15[39m
+[32m     11[39m [38;5;28;01mfor[39;00m name [38;5;28;01min[39;00m plot_names:
+[32m     12[39m     print([33m"  "[39m, name)
+[32m     13[39m 
+[32m     14[39m print(len(plot_names), [33m"plotfiles found in"[39m, PLOT_DIR)
+[32m---> [39m[32m15[39m PLOTFILE_NAME = plot_names[[32m30[39m]
+
+[31mIndexError[39m: list index out of range
+
+[SKIP] MFM_t_8_mxi_931/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_932/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+from pathlib import Path
+import yt
+
+
+plot_paths = sorted([p for p in PLOT_DIR.glob(f"{PLOT_PREFIX}*") if p.is_dir()])
+
+# 只要名稱 (plt000100, ...)
+plot_names = [p.name for p in plot_paths]
+
+print("Available plotfiles:")
+for name in plot_names:
+    print("  ", name)
+    
+print(len(plot_names), "plotfiles found in", PLOT_DIR)
+PLOTFILE_NAME = plot_names[30] 
+
+------------------
+
+----- stdout -----
+Available plotfiles:
+   plt00000000
+   plt00001257
+   plt00003382
+   plt00004022
+   plt00004223
+   plt00004388
+   plt00004528
+   plt00004650
+   plt00004759
+   plt00004857
+   plt00004946
+   plt00005042
+   plt00005148
+   plt00005267
+   plt00005403
+   plt00005562
+   plt00005754
+   plt00005999
+   plt00006344
+   plt00006920
+20 plotfiles found in plts
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mIndexError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[4][39m[32m, line 15[39m
+[32m     11[39m [38;5;28;01mfor[39;00m name [38;5;28;01min[39;00m plot_names:
+[32m     12[39m     print([33m"  "[39m, name)
+[32m     13[39m 
+[32m     14[39m print(len(plot_names), [33m"plotfiles found in"[39m, PLOT_DIR)
+[32m---> [39m[32m15[39m PLOTFILE_NAME = plot_names[[32m30[39m]
+
+[31mIndexError[39m: list index out of range
+
+[SKIP] MFM_t_8_mxi_932/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_933/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+# ============================================================
+# Main append block
+# ============================================================
+
+# 只有啟用 Excel 儲存與重複檢查時，才查詢既有 workbook。
+already_in_excel = (
+    SAVE_TO_EXCEL
+    and SKIP_IF_FOLDER_EXISTS
+    and folder_exists_in_excel(
+        EXCEL_PATH,
+        FOLDER_NAME,
+        sheet_name=EXPERIMENTS_SHEET_NAME,
+    )
+)
+
+if already_in_excel:
+    print(
+        f"[SKIP] {FOLDER_NAME} already exists "
+        f"in the {EXPERIMENTS_SHEET_NAME!r} sheet."
+    )
+
+else:
+    # --------------------------------------------------------
+    # 1. Read parameters
+    # --------------------------------------------------------
+    inputs_path = CASE_DIR / INPUTS_FILENAME
+
+    if not inputs_path.exists():
+        raise FileNotFoundError(
+            f"inputs not found: {inputs_path}"
+        )
+
+    # 使用你原本程式裡的 read_inputs()
+    if "read_inputs" not in globals():
+        raise NameError(
+            "read_inputs() is not defined. "
+            "Please run the inputs parsing cell first."
+        )
+
+    params_current = read_inputs(
+        inputs_path,
+    )
+
+    # --------------------------------------------------------
+    # 2. Read PV curve
+    # --------------------------------------------------------
+    pv_df_current = read_current_pv_curve(
+        case_dir=CASE_DIR,
+        folder_name=FOLDER_NAME,
+    )
+
+    # --------------------------------------------------------
+    # 3. Extract and optionally save Pz/Phi
+    # --------------------------------------------------------
+    if SAVE_NPZ:
+        pz_df_current = extract_current_pz_phi(
+            case_dir=CASE_DIR,
+            params=params_current,
+            pv_df=pv_df_current,
+            output_npz=NPZ_PATH,
+        )
+    else:
+        pz_df_current = pd.DataFrame(columns=PZ_INDEX_COLUMNS)
+        print("[SKIP] SAVE_NPZ=False; Pz/Phi extraction was skipped.")
+
+    # --------------------------------------------------
+    # 4. Calculate valid_loop
+    # --------------------------------------------------
+    csv_path = CASE_DIR / PV_CSV_RELATIVE_PATH
+
+    if csv_path.is_file():
+        print(f"Analyzing loop from CSV: {csv_path}")
+        loop_analyzer = loop_metrics.LoopAnalyzer(
+            open_threshold=OPEN_THRESHOLD,
+            close_threshold=CLOSE_THRESHOLD,
+        )
+        loop_result = loop_analyzer.analyze_csv(csv_path)
+        params_current["valid_loop"] = loop_result.valid_loop
+    else:
+        params_current["valid_loop"] = "no_data"
+
+    # --------------------------------------------------
+    # 5. Calculate has_multi
+    # --------------------------------------------------
+    npz_path = NPZ_PATH
+
+    if SAVE_NPZ and npz_path.is_file():
+        print(f"Analyzing multi-domain from NPZ: {npz_path}")
+        multi_analyzer = has_multi.MultiAnalyzer(
+            var_threshold=VAR_THRESHOLD,
+            z_index=None,
+        )
+        multi_result = multi_analyzer.analyze_npz(npz_path)
+        params_current["has_multi"] = multi_result.has_multi
+    else:
+        params_current["has_multi"] = "no_data"
+    # --------------------------------------------------------
+    # 6. Build experiments row
+    # --------------------------------------------------------
+    exp_df_current = build_experiment_dataframe(
+        case_dir=CASE_DIR,
+        params=params_current,
+        pv_df=pv_df_current,
+        pz_df=pz_df_current,
+        npz_path=NPZ_PATH if SAVE_NPZ else None,
+    )
+
+    # --------------------------------------------------------
+    # 7. Load or create Excel workbook
+    # --------------------------------------------------------
+    if SAVE_TO_EXCEL and EXCEL_PATH.exists():
+        workbook = load_workbook(
+            EXCEL_PATH
+        )
+    else:
+        workbook = Workbook()
+
+        # 移除 openpyxl 自動建立的 Sheet
+        default_sheet = workbook.active
+        workbook.remove(default_sheet)
+
+    # --------------------------------------------------------
+    # 8. Append all sheets in memory
+    # --------------------------------------------------------
+    append_dataframe_to_worksheet(
+    workbook=workbook,
+    sheet_name=EXPERIMENTS_SHEET_NAME,
+    dataframe=exp_df_current,
+    expected_columns=EXPERIMENT_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PV_SHEET_NAME,
+        dataframe=pv_df_current,
+        expected_columns=PV_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PZ_INDEX_SHEET_NAME,
+        dataframe=pz_df_current,
+        expected_columns=PZ_INDEX_COLUMNS,
+    )
+
+    # 最後只 save 一次，避免只寫完一個 sheet 就中斷。
+    if SAVE_TO_EXCEL:
+        EXCEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+        workbook.save(EXCEL_PATH)
+        excel_status = str(EXCEL_PATH)
+    else:
+        excel_status = "not saved (SAVE_TO_EXCEL=False)"
+        print("[SKIP] Excel workbook was not created or modified.")
+
+    workbook.close()
+
+    print("=" * 60)
+    print("Analysis completed")
+    print("Folder     :", FOLDER_NAME)
+    print("Excel      :", excel_status)
+    print("PV points  :", len(pv_df_current))
+    print("Pz/Phi     :", len(pz_df_current))
+    print("=" * 60)
+------------------
+
+----- stdout -----
+MFM_t_8_mxi_933: CSV does not contain V_applied column. Using default sweep values.
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mValueError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[24][39m[32m, line 47[39m
+[32m     43[39m 
+[32m     44[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m     45[39m     [38;5;66;03m# 2. Read PV curve[39;00m
+[32m     46[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m---> [39m[32m47[39m     pv_df_current = read_current_pv_curve(
+[32m     48[39m         case_dir=CASE_DIR,
+[32m     49[39m         folder_name=FOLDER_NAME,
+[32m     50[39m     )
+
+[36mCell[39m[36m [39m[32mIn[23][39m[32m, line 295[39m, in [36mread_current_pv_curve[39m[34m(case_dir, folder_name)[39m
+[32m    291[39m         print(f"{folder_name}: CSV does not contain V_applied column. Using default sweep values.")
+[32m    292[39m         sweep_values, sweep_branches = build_default_sweep()
+[32m    293[39m 
+[32m    294[39m         [38;5;28;01mif[39;00m n != len(sweep_values):
+[32m--> [39m[32m295[39m             raise ValueError(
+[32m    296[39m                 f"{folder_name}: CSV rows ({n}) do not match "
+[32m    297[39m                 f"default sweep points ({len(sweep_values)}).\n"
+[32m    298[39m                 f"Default sweep = "
+
+[31mValueError[39m: MFM_t_8_mxi_933: CSV rows (27) do not match default sweep points (37).
+Default sweep = -4.5 -> 4.5 -> -4.5
+
+[SKIP] MFM_t_8_mxi_933/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_934/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+from pathlib import Path
+import yt
+
+
+plot_paths = sorted([p for p in PLOT_DIR.glob(f"{PLOT_PREFIX}*") if p.is_dir()])
+
+# 只要名稱 (plt000100, ...)
+plot_names = [p.name for p in plot_paths]
+
+print("Available plotfiles:")
+for name in plot_names:
+    print("  ", name)
+    
+print(len(plot_names), "plotfiles found in", PLOT_DIR)
+PLOTFILE_NAME = plot_names[30] 
+
+------------------
+
+----- stdout -----
+Available plotfiles:
+   plt00000000
+   plt00000938
+2 plotfiles found in plts
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mIndexError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[4][39m[32m, line 15[39m
+[32m     11[39m [38;5;28;01mfor[39;00m name [38;5;28;01min[39;00m plot_names:
+[32m     12[39m     print([33m"  "[39m, name)
+[32m     13[39m 
+[32m     14[39m print(len(plot_names), [33m"plotfiles found in"[39m, PLOT_DIR)
+[32m---> [39m[32m15[39m PLOTFILE_NAME = plot_names[[32m30[39m]
+
+[31mIndexError[39m: list index out of range
+
+[SKIP] MFM_t_8_mxi_934/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_935/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+from pathlib import Path
+import yt
+
+
+plot_paths = sorted([p for p in PLOT_DIR.glob(f"{PLOT_PREFIX}*") if p.is_dir()])
+
+# 只要名稱 (plt000100, ...)
+plot_names = [p.name for p in plot_paths]
+
+print("Available plotfiles:")
+for name in plot_names:
+    print("  ", name)
+    
+print(len(plot_names), "plotfiles found in", PLOT_DIR)
+PLOTFILE_NAME = plot_names[30] 
+
+------------------
+
+----- stdout -----
+Available plotfiles:
+   plt00000000
+   plt00001982
+   plt00002054
+   plt00002217
+   plt00006226
+   plt00006559
+   plt00006576
+   plt00006600
+   plt00006638
+   plt00006723
+10 plotfiles found in plts
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mIndexError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[4][39m[32m, line 15[39m
+[32m     11[39m [38;5;28;01mfor[39;00m name [38;5;28;01min[39;00m plot_names:
+[32m     12[39m     print([33m"  "[39m, name)
+[32m     13[39m 
+[32m     14[39m print(len(plot_names), [33m"plotfiles found in"[39m, PLOT_DIR)
+[32m---> [39m[32m15[39m PLOTFILE_NAME = plot_names[[32m30[39m]
+
+[31mIndexError[39m: list index out of range
+
+[SKIP] MFM_t_8_mxi_935/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_936/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+# ============================================================
+# Main append block
+# ============================================================
+
+# 只有啟用 Excel 儲存與重複檢查時，才查詢既有 workbook。
+already_in_excel = (
+    SAVE_TO_EXCEL
+    and SKIP_IF_FOLDER_EXISTS
+    and folder_exists_in_excel(
+        EXCEL_PATH,
+        FOLDER_NAME,
+        sheet_name=EXPERIMENTS_SHEET_NAME,
+    )
+)
+
+if already_in_excel:
+    print(
+        f"[SKIP] {FOLDER_NAME} already exists "
+        f"in the {EXPERIMENTS_SHEET_NAME!r} sheet."
+    )
+
+else:
+    # --------------------------------------------------------
+    # 1. Read parameters
+    # --------------------------------------------------------
+    inputs_path = CASE_DIR / INPUTS_FILENAME
+
+    if not inputs_path.exists():
+        raise FileNotFoundError(
+            f"inputs not found: {inputs_path}"
+        )
+
+    # 使用你原本程式裡的 read_inputs()
+    if "read_inputs" not in globals():
+        raise NameError(
+            "read_inputs() is not defined. "
+            "Please run the inputs parsing cell first."
+        )
+
+    params_current = read_inputs(
+        inputs_path,
+    )
+
+    # --------------------------------------------------------
+    # 2. Read PV curve
+    # --------------------------------------------------------
+    pv_df_current = read_current_pv_curve(
+        case_dir=CASE_DIR,
+        folder_name=FOLDER_NAME,
+    )
+
+    # --------------------------------------------------------
+    # 3. Extract and optionally save Pz/Phi
+    # --------------------------------------------------------
+    if SAVE_NPZ:
+        pz_df_current = extract_current_pz_phi(
+            case_dir=CASE_DIR,
+            params=params_current,
+            pv_df=pv_df_current,
+            output_npz=NPZ_PATH,
+        )
+    else:
+        pz_df_current = pd.DataFrame(columns=PZ_INDEX_COLUMNS)
+        print("[SKIP] SAVE_NPZ=False; Pz/Phi extraction was skipped.")
+
+    # --------------------------------------------------
+    # 4. Calculate valid_loop
+    # --------------------------------------------------
+    csv_path = CASE_DIR / PV_CSV_RELATIVE_PATH
+
+    if csv_path.is_file():
+        print(f"Analyzing loop from CSV: {csv_path}")
+        loop_analyzer = loop_metrics.LoopAnalyzer(
+            open_threshold=OPEN_THRESHOLD,
+            close_threshold=CLOSE_THRESHOLD,
+        )
+        loop_result = loop_analyzer.analyze_csv(csv_path)
+        params_current["valid_loop"] = loop_result.valid_loop
+    else:
+        params_current["valid_loop"] = "no_data"
+
+    # --------------------------------------------------
+    # 5. Calculate has_multi
+    # --------------------------------------------------
+    npz_path = NPZ_PATH
+
+    if SAVE_NPZ and npz_path.is_file():
+        print(f"Analyzing multi-domain from NPZ: {npz_path}")
+        multi_analyzer = has_multi.MultiAnalyzer(
+            var_threshold=VAR_THRESHOLD,
+            z_index=None,
+        )
+        multi_result = multi_analyzer.analyze_npz(npz_path)
+        params_current["has_multi"] = multi_result.has_multi
+    else:
+        params_current["has_multi"] = "no_data"
+    # --------------------------------------------------------
+    # 6. Build experiments row
+    # --------------------------------------------------------
+    exp_df_current = build_experiment_dataframe(
+        case_dir=CASE_DIR,
+        params=params_current,
+        pv_df=pv_df_current,
+        pz_df=pz_df_current,
+        npz_path=NPZ_PATH if SAVE_NPZ else None,
+    )
+
+    # --------------------------------------------------------
+    # 7. Load or create Excel workbook
+    # --------------------------------------------------------
+    if SAVE_TO_EXCEL and EXCEL_PATH.exists():
+        workbook = load_workbook(
+            EXCEL_PATH
+        )
+    else:
+        workbook = Workbook()
+
+        # 移除 openpyxl 自動建立的 Sheet
+        default_sheet = workbook.active
+        workbook.remove(default_sheet)
+
+    # --------------------------------------------------------
+    # 8. Append all sheets in memory
+    # --------------------------------------------------------
+    append_dataframe_to_worksheet(
+    workbook=workbook,
+    sheet_name=EXPERIMENTS_SHEET_NAME,
+    dataframe=exp_df_current,
+    expected_columns=EXPERIMENT_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PV_SHEET_NAME,
+        dataframe=pv_df_current,
+        expected_columns=PV_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PZ_INDEX_SHEET_NAME,
+        dataframe=pz_df_current,
+        expected_columns=PZ_INDEX_COLUMNS,
+    )
+
+    # 最後只 save 一次，避免只寫完一個 sheet 就中斷。
+    if SAVE_TO_EXCEL:
+        EXCEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+        workbook.save(EXCEL_PATH)
+        excel_status = str(EXCEL_PATH)
+    else:
+        excel_status = "not saved (SAVE_TO_EXCEL=False)"
+        print("[SKIP] Excel workbook was not created or modified.")
+
+    workbook.close()
+
+    print("=" * 60)
+    print("Analysis completed")
+    print("Folder     :", FOLDER_NAME)
+    print("Excel      :", excel_status)
+    print("PV points  :", len(pv_df_current))
+    print("Pz/Phi     :", len(pz_df_current))
+    print("=" * 60)
+------------------
+
+----- stdout -----
+MFM_t_8_mxi_936: CSV does not contain V_applied column. Using default sweep values.
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mValueError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[24][39m[32m, line 47[39m
+[32m     43[39m 
+[32m     44[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m     45[39m     [38;5;66;03m# 2. Read PV curve[39;00m
+[32m     46[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m---> [39m[32m47[39m     pv_df_current = read_current_pv_curve(
+[32m     48[39m         case_dir=CASE_DIR,
+[32m     49[39m         folder_name=FOLDER_NAME,
+[32m     50[39m     )
+
+[36mCell[39m[36m [39m[32mIn[23][39m[32m, line 295[39m, in [36mread_current_pv_curve[39m[34m(case_dir, folder_name)[39m
+[32m    291[39m         print(f"{folder_name}: CSV does not contain V_applied column. Using default sweep values.")
+[32m    292[39m         sweep_values, sweep_branches = build_default_sweep()
+[32m    293[39m 
+[32m    294[39m         [38;5;28;01mif[39;00m n != len(sweep_values):
+[32m--> [39m[32m295[39m             raise ValueError(
+[32m    296[39m                 f"{folder_name}: CSV rows ({n}) do not match "
+[32m    297[39m                 f"default sweep points ({len(sweep_values)}).\n"
+[32m    298[39m                 f"Default sweep = "
+
+[31mValueError[39m: MFM_t_8_mxi_936: CSV rows (31) do not match default sweep points (37).
+Default sweep = -4.5 -> 4.5 -> -4.5
+
+[SKIP] MFM_t_8_mxi_936/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_937/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+# ============================================================
+# Main append block
+# ============================================================
+
+# 只有啟用 Excel 儲存與重複檢查時，才查詢既有 workbook。
+already_in_excel = (
+    SAVE_TO_EXCEL
+    and SKIP_IF_FOLDER_EXISTS
+    and folder_exists_in_excel(
+        EXCEL_PATH,
+        FOLDER_NAME,
+        sheet_name=EXPERIMENTS_SHEET_NAME,
+    )
+)
+
+if already_in_excel:
+    print(
+        f"[SKIP] {FOLDER_NAME} already exists "
+        f"in the {EXPERIMENTS_SHEET_NAME!r} sheet."
+    )
+
+else:
+    # --------------------------------------------------------
+    # 1. Read parameters
+    # --------------------------------------------------------
+    inputs_path = CASE_DIR / INPUTS_FILENAME
+
+    if not inputs_path.exists():
+        raise FileNotFoundError(
+            f"inputs not found: {inputs_path}"
+        )
+
+    # 使用你原本程式裡的 read_inputs()
+    if "read_inputs" not in globals():
+        raise NameError(
+            "read_inputs() is not defined. "
+            "Please run the inputs parsing cell first."
+        )
+
+    params_current = read_inputs(
+        inputs_path,
+    )
+
+    # --------------------------------------------------------
+    # 2. Read PV curve
+    # --------------------------------------------------------
+    pv_df_current = read_current_pv_curve(
+        case_dir=CASE_DIR,
+        folder_name=FOLDER_NAME,
+    )
+
+    # --------------------------------------------------------
+    # 3. Extract and optionally save Pz/Phi
+    # --------------------------------------------------------
+    if SAVE_NPZ:
+        pz_df_current = extract_current_pz_phi(
+            case_dir=CASE_DIR,
+            params=params_current,
+            pv_df=pv_df_current,
+            output_npz=NPZ_PATH,
+        )
+    else:
+        pz_df_current = pd.DataFrame(columns=PZ_INDEX_COLUMNS)
+        print("[SKIP] SAVE_NPZ=False; Pz/Phi extraction was skipped.")
+
+    # --------------------------------------------------
+    # 4. Calculate valid_loop
+    # --------------------------------------------------
+    csv_path = CASE_DIR / PV_CSV_RELATIVE_PATH
+
+    if csv_path.is_file():
+        print(f"Analyzing loop from CSV: {csv_path}")
+        loop_analyzer = loop_metrics.LoopAnalyzer(
+            open_threshold=OPEN_THRESHOLD,
+            close_threshold=CLOSE_THRESHOLD,
+        )
+        loop_result = loop_analyzer.analyze_csv(csv_path)
+        params_current["valid_loop"] = loop_result.valid_loop
+    else:
+        params_current["valid_loop"] = "no_data"
+
+    # --------------------------------------------------
+    # 5. Calculate has_multi
+    # --------------------------------------------------
+    npz_path = NPZ_PATH
+
+    if SAVE_NPZ and npz_path.is_file():
+        print(f"Analyzing multi-domain from NPZ: {npz_path}")
+        multi_analyzer = has_multi.MultiAnalyzer(
+            var_threshold=VAR_THRESHOLD,
+            z_index=None,
+        )
+        multi_result = multi_analyzer.analyze_npz(npz_path)
+        params_current["has_multi"] = multi_result.has_multi
+    else:
+        params_current["has_multi"] = "no_data"
+    # --------------------------------------------------------
+    # 6. Build experiments row
+    # --------------------------------------------------------
+    exp_df_current = build_experiment_dataframe(
+        case_dir=CASE_DIR,
+        params=params_current,
+        pv_df=pv_df_current,
+        pz_df=pz_df_current,
+        npz_path=NPZ_PATH if SAVE_NPZ else None,
+    )
+
+    # --------------------------------------------------------
+    # 7. Load or create Excel workbook
+    # --------------------------------------------------------
+    if SAVE_TO_EXCEL and EXCEL_PATH.exists():
+        workbook = load_workbook(
+            EXCEL_PATH
+        )
+    else:
+        workbook = Workbook()
+
+        # 移除 openpyxl 自動建立的 Sheet
+        default_sheet = workbook.active
+        workbook.remove(default_sheet)
+
+    # --------------------------------------------------------
+    # 8. Append all sheets in memory
+    # --------------------------------------------------------
+    append_dataframe_to_worksheet(
+    workbook=workbook,
+    sheet_name=EXPERIMENTS_SHEET_NAME,
+    dataframe=exp_df_current,
+    expected_columns=EXPERIMENT_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PV_SHEET_NAME,
+        dataframe=pv_df_current,
+        expected_columns=PV_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PZ_INDEX_SHEET_NAME,
+        dataframe=pz_df_current,
+        expected_columns=PZ_INDEX_COLUMNS,
+    )
+
+    # 最後只 save 一次，避免只寫完一個 sheet 就中斷。
+    if SAVE_TO_EXCEL:
+        EXCEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+        workbook.save(EXCEL_PATH)
+        excel_status = str(EXCEL_PATH)
+    else:
+        excel_status = "not saved (SAVE_TO_EXCEL=False)"
+        print("[SKIP] Excel workbook was not created or modified.")
+
+    workbook.close()
+
+    print("=" * 60)
+    print("Analysis completed")
+    print("Folder     :", FOLDER_NAME)
+    print("Excel      :", excel_status)
+    print("PV points  :", len(pv_df_current))
+    print("Pz/Phi     :", len(pz_df_current))
+    print("=" * 60)
+------------------
+
+----- stdout -----
+MFM_t_8_mxi_937: CSV does not contain V_applied column. Using default sweep values.
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mValueError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[24][39m[32m, line 47[39m
+[32m     43[39m 
+[32m     44[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m     45[39m     [38;5;66;03m# 2. Read PV curve[39;00m
+[32m     46[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m---> [39m[32m47[39m     pv_df_current = read_current_pv_curve(
+[32m     48[39m         case_dir=CASE_DIR,
+[32m     49[39m         folder_name=FOLDER_NAME,
+[32m     50[39m     )
+
+[36mCell[39m[36m [39m[32mIn[23][39m[32m, line 295[39m, in [36mread_current_pv_curve[39m[34m(case_dir, folder_name)[39m
+[32m    291[39m         print(f"{folder_name}: CSV does not contain V_applied column. Using default sweep values.")
+[32m    292[39m         sweep_values, sweep_branches = build_default_sweep()
+[32m    293[39m 
+[32m    294[39m         [38;5;28;01mif[39;00m n != len(sweep_values):
+[32m--> [39m[32m295[39m             raise ValueError(
+[32m    296[39m                 f"{folder_name}: CSV rows ({n}) do not match "
+[32m    297[39m                 f"default sweep points ({len(sweep_values)}).\n"
+[32m    298[39m                 f"Default sweep = "
+
+[31mValueError[39m: MFM_t_8_mxi_937: CSV rows (32) do not match default sweep points (37).
+Default sweep = -4.5 -> 4.5 -> -4.5
+
+[SKIP] MFM_t_8_mxi_937/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_938/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+# ============================================================
+# Main append block
+# ============================================================
+
+# 只有啟用 Excel 儲存與重複檢查時，才查詢既有 workbook。
+already_in_excel = (
+    SAVE_TO_EXCEL
+    and SKIP_IF_FOLDER_EXISTS
+    and folder_exists_in_excel(
+        EXCEL_PATH,
+        FOLDER_NAME,
+        sheet_name=EXPERIMENTS_SHEET_NAME,
+    )
+)
+
+if already_in_excel:
+    print(
+        f"[SKIP] {FOLDER_NAME} already exists "
+        f"in the {EXPERIMENTS_SHEET_NAME!r} sheet."
+    )
+
+else:
+    # --------------------------------------------------------
+    # 1. Read parameters
+    # --------------------------------------------------------
+    inputs_path = CASE_DIR / INPUTS_FILENAME
+
+    if not inputs_path.exists():
+        raise FileNotFoundError(
+            f"inputs not found: {inputs_path}"
+        )
+
+    # 使用你原本程式裡的 read_inputs()
+    if "read_inputs" not in globals():
+        raise NameError(
+            "read_inputs() is not defined. "
+            "Please run the inputs parsing cell first."
+        )
+
+    params_current = read_inputs(
+        inputs_path,
+    )
+
+    # --------------------------------------------------------
+    # 2. Read PV curve
+    # --------------------------------------------------------
+    pv_df_current = read_current_pv_curve(
+        case_dir=CASE_DIR,
+        folder_name=FOLDER_NAME,
+    )
+
+    # --------------------------------------------------------
+    # 3. Extract and optionally save Pz/Phi
+    # --------------------------------------------------------
+    if SAVE_NPZ:
+        pz_df_current = extract_current_pz_phi(
+            case_dir=CASE_DIR,
+            params=params_current,
+            pv_df=pv_df_current,
+            output_npz=NPZ_PATH,
+        )
+    else:
+        pz_df_current = pd.DataFrame(columns=PZ_INDEX_COLUMNS)
+        print("[SKIP] SAVE_NPZ=False; Pz/Phi extraction was skipped.")
+
+    # --------------------------------------------------
+    # 4. Calculate valid_loop
+    # --------------------------------------------------
+    csv_path = CASE_DIR / PV_CSV_RELATIVE_PATH
+
+    if csv_path.is_file():
+        print(f"Analyzing loop from CSV: {csv_path}")
+        loop_analyzer = loop_metrics.LoopAnalyzer(
+            open_threshold=OPEN_THRESHOLD,
+            close_threshold=CLOSE_THRESHOLD,
+        )
+        loop_result = loop_analyzer.analyze_csv(csv_path)
+        params_current["valid_loop"] = loop_result.valid_loop
+    else:
+        params_current["valid_loop"] = "no_data"
+
+    # --------------------------------------------------
+    # 5. Calculate has_multi
+    # --------------------------------------------------
+    npz_path = NPZ_PATH
+
+    if SAVE_NPZ and npz_path.is_file():
+        print(f"Analyzing multi-domain from NPZ: {npz_path}")
+        multi_analyzer = has_multi.MultiAnalyzer(
+            var_threshold=VAR_THRESHOLD,
+            z_index=None,
+        )
+        multi_result = multi_analyzer.analyze_npz(npz_path)
+        params_current["has_multi"] = multi_result.has_multi
+    else:
+        params_current["has_multi"] = "no_data"
+    # --------------------------------------------------------
+    # 6. Build experiments row
+    # --------------------------------------------------------
+    exp_df_current = build_experiment_dataframe(
+        case_dir=CASE_DIR,
+        params=params_current,
+        pv_df=pv_df_current,
+        pz_df=pz_df_current,
+        npz_path=NPZ_PATH if SAVE_NPZ else None,
+    )
+
+    # --------------------------------------------------------
+    # 7. Load or create Excel workbook
+    # --------------------------------------------------------
+    if SAVE_TO_EXCEL and EXCEL_PATH.exists():
+        workbook = load_workbook(
+            EXCEL_PATH
+        )
+    else:
+        workbook = Workbook()
+
+        # 移除 openpyxl 自動建立的 Sheet
+        default_sheet = workbook.active
+        workbook.remove(default_sheet)
+
+    # --------------------------------------------------------
+    # 8. Append all sheets in memory
+    # --------------------------------------------------------
+    append_dataframe_to_worksheet(
+    workbook=workbook,
+    sheet_name=EXPERIMENTS_SHEET_NAME,
+    dataframe=exp_df_current,
+    expected_columns=EXPERIMENT_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PV_SHEET_NAME,
+        dataframe=pv_df_current,
+        expected_columns=PV_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PZ_INDEX_SHEET_NAME,
+        dataframe=pz_df_current,
+        expected_columns=PZ_INDEX_COLUMNS,
+    )
+
+    # 最後只 save 一次，避免只寫完一個 sheet 就中斷。
+    if SAVE_TO_EXCEL:
+        EXCEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+        workbook.save(EXCEL_PATH)
+        excel_status = str(EXCEL_PATH)
+    else:
+        excel_status = "not saved (SAVE_TO_EXCEL=False)"
+        print("[SKIP] Excel workbook was not created or modified.")
+
+    workbook.close()
+
+    print("=" * 60)
+    print("Analysis completed")
+    print("Folder     :", FOLDER_NAME)
+    print("Excel      :", excel_status)
+    print("PV points  :", len(pv_df_current))
+    print("Pz/Phi     :", len(pz_df_current))
+    print("=" * 60)
+------------------
+
+----- stdout -----
+MFM_t_8_mxi_938: CSV does not contain V_applied column. Using default sweep values.
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mValueError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[24][39m[32m, line 47[39m
+[32m     43[39m 
+[32m     44[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m     45[39m     [38;5;66;03m# 2. Read PV curve[39;00m
+[32m     46[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m---> [39m[32m47[39m     pv_df_current = read_current_pv_curve(
+[32m     48[39m         case_dir=CASE_DIR,
+[32m     49[39m         folder_name=FOLDER_NAME,
+[32m     50[39m     )
+
+[36mCell[39m[36m [39m[32mIn[23][39m[32m, line 295[39m, in [36mread_current_pv_curve[39m[34m(case_dir, folder_name)[39m
+[32m    291[39m         print(f"{folder_name}: CSV does not contain V_applied column. Using default sweep values.")
+[32m    292[39m         sweep_values, sweep_branches = build_default_sweep()
+[32m    293[39m 
+[32m    294[39m         [38;5;28;01mif[39;00m n != len(sweep_values):
+[32m--> [39m[32m295[39m             raise ValueError(
+[32m    296[39m                 f"{folder_name}: CSV rows ({n}) do not match "
+[32m    297[39m                 f"default sweep points ({len(sweep_values)}).\n"
+[32m    298[39m                 f"Default sweep = "
+
+[31mValueError[39m: MFM_t_8_mxi_938: CSV rows (30) do not match default sweep points (37).
+Default sweep = -4.5 -> 4.5 -> -4.5
+
+[SKIP] MFM_t_8_mxi_938/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_939/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+from pathlib import Path
+import yt
+
+
+plot_paths = sorted([p for p in PLOT_DIR.glob(f"{PLOT_PREFIX}*") if p.is_dir()])
+
+# 只要名稱 (plt000100, ...)
+plot_names = [p.name for p in plot_paths]
+
+print("Available plotfiles:")
+for name in plot_names:
+    print("  ", name)
+    
+print(len(plot_names), "plotfiles found in", PLOT_DIR)
+PLOTFILE_NAME = plot_names[30] 
+
+------------------
+
+----- stdout -----
+Available plotfiles:
+   plt00000000
+   plt00000235
+   plt00000299
+   plt00000576
+   plt00000914
+   plt00002175
+   plt00002414
+   plt00002457
+   plt00002568
+9 plotfiles found in plts
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mIndexError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[4][39m[32m, line 15[39m
+[32m     11[39m [38;5;28;01mfor[39;00m name [38;5;28;01min[39;00m plot_names:
+[32m     12[39m     print([33m"  "[39m, name)
+[32m     13[39m 
+[32m     14[39m print(len(plot_names), [33m"plotfiles found in"[39m, PLOT_DIR)
+[32m---> [39m[32m15[39m PLOTFILE_NAME = plot_names[[32m30[39m]
+
+[31mIndexError[39m: list index out of range
+
+[SKIP] MFM_t_8_mxi_939/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_940/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+from pathlib import Path
+import yt
+
+
+plot_paths = sorted([p for p in PLOT_DIR.glob(f"{PLOT_PREFIX}*") if p.is_dir()])
+
+# 只要名稱 (plt000100, ...)
+plot_names = [p.name for p in plot_paths]
+
+print("Available plotfiles:")
+for name in plot_names:
+    print("  ", name)
+    
+print(len(plot_names), "plotfiles found in", PLOT_DIR)
+PLOTFILE_NAME = plot_names[30] 
+
+------------------
+
+----- stdout -----
+Available plotfiles:
+   plt00000000
+   plt00000160
+   plt00000202
+   plt00000499
+   plt00000730
+   plt00001364
+   plt00001392
+   plt00001442
+8 plotfiles found in plts
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mIndexError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[4][39m[32m, line 15[39m
+[32m     11[39m [38;5;28;01mfor[39;00m name [38;5;28;01min[39;00m plot_names:
+[32m     12[39m     print([33m"  "[39m, name)
+[32m     13[39m 
+[32m     14[39m print(len(plot_names), [33m"plotfiles found in"[39m, PLOT_DIR)
+[32m---> [39m[32m15[39m PLOTFILE_NAME = plot_names[[32m30[39m]
+
+[31mIndexError[39m: list index out of range
+
+[SKIP] MFM_t_8_mxi_940/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_941/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+from pathlib import Path
+import yt
+
+
+plot_paths = sorted([p for p in PLOT_DIR.glob(f"{PLOT_PREFIX}*") if p.is_dir()])
+
+# 只要名稱 (plt000100, ...)
+plot_names = [p.name for p in plot_paths]
+
+print("Available plotfiles:")
+for name in plot_names:
+    print("  ", name)
+    
+print(len(plot_names), "plotfiles found in", PLOT_DIR)
+PLOTFILE_NAME = plot_names[30] 
+
+------------------
+
+----- stdout -----
+Available plotfiles:
+   plt00000000
+   plt00000578
+   plt00000640
+   plt00000738
+   plt00000903
+5 plotfiles found in plts
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mIndexError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[4][39m[32m, line 15[39m
+[32m     11[39m [38;5;28;01mfor[39;00m name [38;5;28;01min[39;00m plot_names:
+[32m     12[39m     print([33m"  "[39m, name)
+[32m     13[39m 
+[32m     14[39m print(len(plot_names), [33m"plotfiles found in"[39m, PLOT_DIR)
+[32m---> [39m[32m15[39m PLOTFILE_NAME = plot_names[[32m30[39m]
+
+[31mIndexError[39m: list index out of range
+
+[SKIP] MFM_t_8_mxi_941/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_942/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+# ============================================================
+# Main append block
+# ============================================================
+
+# 只有啟用 Excel 儲存與重複檢查時，才查詢既有 workbook。
+already_in_excel = (
+    SAVE_TO_EXCEL
+    and SKIP_IF_FOLDER_EXISTS
+    and folder_exists_in_excel(
+        EXCEL_PATH,
+        FOLDER_NAME,
+        sheet_name=EXPERIMENTS_SHEET_NAME,
+    )
+)
+
+if already_in_excel:
+    print(
+        f"[SKIP] {FOLDER_NAME} already exists "
+        f"in the {EXPERIMENTS_SHEET_NAME!r} sheet."
+    )
+
+else:
+    # --------------------------------------------------------
+    # 1. Read parameters
+    # --------------------------------------------------------
+    inputs_path = CASE_DIR / INPUTS_FILENAME
+
+    if not inputs_path.exists():
+        raise FileNotFoundError(
+            f"inputs not found: {inputs_path}"
+        )
+
+    # 使用你原本程式裡的 read_inputs()
+    if "read_inputs" not in globals():
+        raise NameError(
+            "read_inputs() is not defined. "
+            "Please run the inputs parsing cell first."
+        )
+
+    params_current = read_inputs(
+        inputs_path,
+    )
+
+    # --------------------------------------------------------
+    # 2. Read PV curve
+    # --------------------------------------------------------
+    pv_df_current = read_current_pv_curve(
+        case_dir=CASE_DIR,
+        folder_name=FOLDER_NAME,
+    )
+
+    # --------------------------------------------------------
+    # 3. Extract and optionally save Pz/Phi
+    # --------------------------------------------------------
+    if SAVE_NPZ:
+        pz_df_current = extract_current_pz_phi(
+            case_dir=CASE_DIR,
+            params=params_current,
+            pv_df=pv_df_current,
+            output_npz=NPZ_PATH,
+        )
+    else:
+        pz_df_current = pd.DataFrame(columns=PZ_INDEX_COLUMNS)
+        print("[SKIP] SAVE_NPZ=False; Pz/Phi extraction was skipped.")
+
+    # --------------------------------------------------
+    # 4. Calculate valid_loop
+    # --------------------------------------------------
+    csv_path = CASE_DIR / PV_CSV_RELATIVE_PATH
+
+    if csv_path.is_file():
+        print(f"Analyzing loop from CSV: {csv_path}")
+        loop_analyzer = loop_metrics.LoopAnalyzer(
+            open_threshold=OPEN_THRESHOLD,
+            close_threshold=CLOSE_THRESHOLD,
+        )
+        loop_result = loop_analyzer.analyze_csv(csv_path)
+        params_current["valid_loop"] = loop_result.valid_loop
+    else:
+        params_current["valid_loop"] = "no_data"
+
+    # --------------------------------------------------
+    # 5. Calculate has_multi
+    # --------------------------------------------------
+    npz_path = NPZ_PATH
+
+    if SAVE_NPZ and npz_path.is_file():
+        print(f"Analyzing multi-domain from NPZ: {npz_path}")
+        multi_analyzer = has_multi.MultiAnalyzer(
+            var_threshold=VAR_THRESHOLD,
+            z_index=None,
+        )
+        multi_result = multi_analyzer.analyze_npz(npz_path)
+        params_current["has_multi"] = multi_result.has_multi
+    else:
+        params_current["has_multi"] = "no_data"
+    # --------------------------------------------------------
+    # 6. Build experiments row
+    # --------------------------------------------------------
+    exp_df_current = build_experiment_dataframe(
+        case_dir=CASE_DIR,
+        params=params_current,
+        pv_df=pv_df_current,
+        pz_df=pz_df_current,
+        npz_path=NPZ_PATH if SAVE_NPZ else None,
+    )
+
+    # --------------------------------------------------------
+    # 7. Load or create Excel workbook
+    # --------------------------------------------------------
+    if SAVE_TO_EXCEL and EXCEL_PATH.exists():
+        workbook = load_workbook(
+            EXCEL_PATH
+        )
+    else:
+        workbook = Workbook()
+
+        # 移除 openpyxl 自動建立的 Sheet
+        default_sheet = workbook.active
+        workbook.remove(default_sheet)
+
+    # --------------------------------------------------------
+    # 8. Append all sheets in memory
+    # --------------------------------------------------------
+    append_dataframe_to_worksheet(
+    workbook=workbook,
+    sheet_name=EXPERIMENTS_SHEET_NAME,
+    dataframe=exp_df_current,
+    expected_columns=EXPERIMENT_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PV_SHEET_NAME,
+        dataframe=pv_df_current,
+        expected_columns=PV_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PZ_INDEX_SHEET_NAME,
+        dataframe=pz_df_current,
+        expected_columns=PZ_INDEX_COLUMNS,
+    )
+
+    # 最後只 save 一次，避免只寫完一個 sheet 就中斷。
+    if SAVE_TO_EXCEL:
+        EXCEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+        workbook.save(EXCEL_PATH)
+        excel_status = str(EXCEL_PATH)
+    else:
+        excel_status = "not saved (SAVE_TO_EXCEL=False)"
+        print("[SKIP] Excel workbook was not created or modified.")
+
+    workbook.close()
+
+    print("=" * 60)
+    print("Analysis completed")
+    print("Folder     :", FOLDER_NAME)
+    print("Excel      :", excel_status)
+    print("PV points  :", len(pv_df_current))
+    print("Pz/Phi     :", len(pz_df_current))
+    print("=" * 60)
+------------------
+
+----- stdout -----
+MFM_t_8_mxi_942: CSV does not contain V_applied column. Using default sweep values.
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mValueError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[24][39m[32m, line 47[39m
+[32m     43[39m 
+[32m     44[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m     45[39m     [38;5;66;03m# 2. Read PV curve[39;00m
+[32m     46[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m---> [39m[32m47[39m     pv_df_current = read_current_pv_curve(
+[32m     48[39m         case_dir=CASE_DIR,
+[32m     49[39m         folder_name=FOLDER_NAME,
+[32m     50[39m     )
+
+[36mCell[39m[36m [39m[32mIn[23][39m[32m, line 295[39m, in [36mread_current_pv_curve[39m[34m(case_dir, folder_name)[39m
+[32m    291[39m         print(f"{folder_name}: CSV does not contain V_applied column. Using default sweep values.")
+[32m    292[39m         sweep_values, sweep_branches = build_default_sweep()
+[32m    293[39m 
+[32m    294[39m         [38;5;28;01mif[39;00m n != len(sweep_values):
+[32m--> [39m[32m295[39m             raise ValueError(
+[32m    296[39m                 f"{folder_name}: CSV rows ({n}) do not match "
+[32m    297[39m                 f"default sweep points ({len(sweep_values)}).\n"
+[32m    298[39m                 f"Default sweep = "
+
+[31mValueError[39m: MFM_t_8_mxi_942: CSV rows (28) do not match default sweep points (37).
+Default sweep = -4.5 -> 4.5 -> -4.5
+
+[SKIP] MFM_t_8_mxi_942/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_943/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+# ============================================================
+# Main append block
+# ============================================================
+
+# 只有啟用 Excel 儲存與重複檢查時，才查詢既有 workbook。
+already_in_excel = (
+    SAVE_TO_EXCEL
+    and SKIP_IF_FOLDER_EXISTS
+    and folder_exists_in_excel(
+        EXCEL_PATH,
+        FOLDER_NAME,
+        sheet_name=EXPERIMENTS_SHEET_NAME,
+    )
+)
+
+if already_in_excel:
+    print(
+        f"[SKIP] {FOLDER_NAME} already exists "
+        f"in the {EXPERIMENTS_SHEET_NAME!r} sheet."
+    )
+
+else:
+    # --------------------------------------------------------
+    # 1. Read parameters
+    # --------------------------------------------------------
+    inputs_path = CASE_DIR / INPUTS_FILENAME
+
+    if not inputs_path.exists():
+        raise FileNotFoundError(
+            f"inputs not found: {inputs_path}"
+        )
+
+    # 使用你原本程式裡的 read_inputs()
+    if "read_inputs" not in globals():
+        raise NameError(
+            "read_inputs() is not defined. "
+            "Please run the inputs parsing cell first."
+        )
+
+    params_current = read_inputs(
+        inputs_path,
+    )
+
+    # --------------------------------------------------------
+    # 2. Read PV curve
+    # --------------------------------------------------------
+    pv_df_current = read_current_pv_curve(
+        case_dir=CASE_DIR,
+        folder_name=FOLDER_NAME,
+    )
+
+    # --------------------------------------------------------
+    # 3. Extract and optionally save Pz/Phi
+    # --------------------------------------------------------
+    if SAVE_NPZ:
+        pz_df_current = extract_current_pz_phi(
+            case_dir=CASE_DIR,
+            params=params_current,
+            pv_df=pv_df_current,
+            output_npz=NPZ_PATH,
+        )
+    else:
+        pz_df_current = pd.DataFrame(columns=PZ_INDEX_COLUMNS)
+        print("[SKIP] SAVE_NPZ=False; Pz/Phi extraction was skipped.")
+
+    # --------------------------------------------------
+    # 4. Calculate valid_loop
+    # --------------------------------------------------
+    csv_path = CASE_DIR / PV_CSV_RELATIVE_PATH
+
+    if csv_path.is_file():
+        print(f"Analyzing loop from CSV: {csv_path}")
+        loop_analyzer = loop_metrics.LoopAnalyzer(
+            open_threshold=OPEN_THRESHOLD,
+            close_threshold=CLOSE_THRESHOLD,
+        )
+        loop_result = loop_analyzer.analyze_csv(csv_path)
+        params_current["valid_loop"] = loop_result.valid_loop
+    else:
+        params_current["valid_loop"] = "no_data"
+
+    # --------------------------------------------------
+    # 5. Calculate has_multi
+    # --------------------------------------------------
+    npz_path = NPZ_PATH
+
+    if SAVE_NPZ and npz_path.is_file():
+        print(f"Analyzing multi-domain from NPZ: {npz_path}")
+        multi_analyzer = has_multi.MultiAnalyzer(
+            var_threshold=VAR_THRESHOLD,
+            z_index=None,
+        )
+        multi_result = multi_analyzer.analyze_npz(npz_path)
+        params_current["has_multi"] = multi_result.has_multi
+    else:
+        params_current["has_multi"] = "no_data"
+    # --------------------------------------------------------
+    # 6. Build experiments row
+    # --------------------------------------------------------
+    exp_df_current = build_experiment_dataframe(
+        case_dir=CASE_DIR,
+        params=params_current,
+        pv_df=pv_df_current,
+        pz_df=pz_df_current,
+        npz_path=NPZ_PATH if SAVE_NPZ else None,
+    )
+
+    # --------------------------------------------------------
+    # 7. Load or create Excel workbook
+    # --------------------------------------------------------
+    if SAVE_TO_EXCEL and EXCEL_PATH.exists():
+        workbook = load_workbook(
+            EXCEL_PATH
+        )
+    else:
+        workbook = Workbook()
+
+        # 移除 openpyxl 自動建立的 Sheet
+        default_sheet = workbook.active
+        workbook.remove(default_sheet)
+
+    # --------------------------------------------------------
+    # 8. Append all sheets in memory
+    # --------------------------------------------------------
+    append_dataframe_to_worksheet(
+    workbook=workbook,
+    sheet_name=EXPERIMENTS_SHEET_NAME,
+    dataframe=exp_df_current,
+    expected_columns=EXPERIMENT_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PV_SHEET_NAME,
+        dataframe=pv_df_current,
+        expected_columns=PV_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PZ_INDEX_SHEET_NAME,
+        dataframe=pz_df_current,
+        expected_columns=PZ_INDEX_COLUMNS,
+    )
+
+    # 最後只 save 一次，避免只寫完一個 sheet 就中斷。
+    if SAVE_TO_EXCEL:
+        EXCEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+        workbook.save(EXCEL_PATH)
+        excel_status = str(EXCEL_PATH)
+    else:
+        excel_status = "not saved (SAVE_TO_EXCEL=False)"
+        print("[SKIP] Excel workbook was not created or modified.")
+
+    workbook.close()
+
+    print("=" * 60)
+    print("Analysis completed")
+    print("Folder     :", FOLDER_NAME)
+    print("Excel      :", excel_status)
+    print("PV points  :", len(pv_df_current))
+    print("Pz/Phi     :", len(pz_df_current))
+    print("=" * 60)
+------------------
+
+----- stdout -----
+MFM_t_8_mxi_943: CSV does not contain V_applied column. Using default sweep values.
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mValueError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[24][39m[32m, line 47[39m
+[32m     43[39m 
+[32m     44[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m     45[39m     [38;5;66;03m# 2. Read PV curve[39;00m
+[32m     46[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m---> [39m[32m47[39m     pv_df_current = read_current_pv_curve(
+[32m     48[39m         case_dir=CASE_DIR,
+[32m     49[39m         folder_name=FOLDER_NAME,
+[32m     50[39m     )
+
+[36mCell[39m[36m [39m[32mIn[23][39m[32m, line 295[39m, in [36mread_current_pv_curve[39m[34m(case_dir, folder_name)[39m
+[32m    291[39m         print(f"{folder_name}: CSV does not contain V_applied column. Using default sweep values.")
+[32m    292[39m         sweep_values, sweep_branches = build_default_sweep()
+[32m    293[39m 
+[32m    294[39m         [38;5;28;01mif[39;00m n != len(sweep_values):
+[32m--> [39m[32m295[39m             raise ValueError(
+[32m    296[39m                 f"{folder_name}: CSV rows ({n}) do not match "
+[32m    297[39m                 f"default sweep points ({len(sweep_values)}).\n"
+[32m    298[39m                 f"Default sweep = "
+
+[31mValueError[39m: MFM_t_8_mxi_943: CSV rows (29) do not match default sweep points (37).
+Default sweep = -4.5 -> 4.5 -> -4.5
+
+[SKIP] MFM_t_8_mxi_943/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_944/analyze.ipynb to notebook
+[NbConvertApp] Writing 1832860 bytes to MFM_t_8_mxi_944/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_945/analyze.ipynb to notebook
+[NbConvertApp] Writing 1811994 bytes to MFM_t_8_mxi_945/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_946/analyze.ipynb to notebook
+[NbConvertApp] Writing 1818364 bytes to MFM_t_8_mxi_946/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_947/analyze.ipynb to notebook
+[NbConvertApp] Writing 1834797 bytes to MFM_t_8_mxi_947/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_948/analyze.ipynb to notebook
+[NbConvertApp] Writing 1804545 bytes to MFM_t_8_mxi_948/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_949/analyze.ipynb to notebook
+[NbConvertApp] Writing 1800136 bytes to MFM_t_8_mxi_949/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_950/analyze.ipynb to notebook
+[NbConvertApp] Writing 1824613 bytes to MFM_t_8_mxi_950/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_951/analyze.ipynb to notebook
+[NbConvertApp] Writing 1823759 bytes to MFM_t_8_mxi_951/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_952/analyze.ipynb to notebook
+[NbConvertApp] Writing 1812027 bytes to MFM_t_8_mxi_952/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_953/analyze.ipynb to notebook
+[NbConvertApp] Writing 1793062 bytes to MFM_t_8_mxi_953/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_954/analyze.ipynb to notebook
+[NbConvertApp] Writing 1814027 bytes to MFM_t_8_mxi_954/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_955/analyze.ipynb to notebook
+[NbConvertApp] Writing 1810492 bytes to MFM_t_8_mxi_955/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_956/analyze.ipynb to notebook
+[NbConvertApp] Writing 1808444 bytes to MFM_t_8_mxi_956/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_957/analyze.ipynb to notebook
+[NbConvertApp] Writing 1809996 bytes to MFM_t_8_mxi_957/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_958/analyze.ipynb to notebook
+[NbConvertApp] Writing 1817519 bytes to MFM_t_8_mxi_958/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_959/analyze.ipynb to notebook
+[NbConvertApp] Writing 1792466 bytes to MFM_t_8_mxi_959/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_960/analyze.ipynb to notebook
+[NbConvertApp] Writing 1812872 bytes to MFM_t_8_mxi_960/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_961/analyze.ipynb to notebook
+[NbConvertApp] Writing 1817691 bytes to MFM_t_8_mxi_961/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_962/analyze.ipynb to notebook
+[NbConvertApp] Writing 1813292 bytes to MFM_t_8_mxi_962/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_963/analyze.ipynb to notebook
+[NbConvertApp] Writing 1814317 bytes to MFM_t_8_mxi_963/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_964/analyze.ipynb to notebook
+[NbConvertApp] Writing 1819479 bytes to MFM_t_8_mxi_964/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_965/analyze.ipynb to notebook
+[NbConvertApp] Writing 1820395 bytes to MFM_t_8_mxi_965/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_966/analyze.ipynb to notebook
+[NbConvertApp] Writing 1815041 bytes to MFM_t_8_mxi_966/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_967/analyze.ipynb to notebook
+[NbConvertApp] Writing 1819166 bytes to MFM_t_8_mxi_967/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_968/analyze.ipynb to notebook
+[NbConvertApp] Writing 1813956 bytes to MFM_t_8_mxi_968/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_969/analyze.ipynb to notebook
+[NbConvertApp] Writing 1805521 bytes to MFM_t_8_mxi_969/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_970/analyze.ipynb to notebook
+[NbConvertApp] Writing 1810750 bytes to MFM_t_8_mxi_970/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_971/analyze.ipynb to notebook
+[NbConvertApp] Writing 1814736 bytes to MFM_t_8_mxi_971/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_972/analyze.ipynb to notebook
+[NbConvertApp] Writing 1793708 bytes to MFM_t_8_mxi_972/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_973/analyze.ipynb to notebook
+[NbConvertApp] Writing 1815676 bytes to MFM_t_8_mxi_973/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_974/analyze.ipynb to notebook
+[NbConvertApp] Writing 1815512 bytes to MFM_t_8_mxi_974/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_975/analyze.ipynb to notebook
+[NbConvertApp] Writing 1818057 bytes to MFM_t_8_mxi_975/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_976/analyze.ipynb to notebook
+[NbConvertApp] Writing 1825046 bytes to MFM_t_8_mxi_976/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_977/analyze.ipynb to notebook
+[NbConvertApp] Writing 1808344 bytes to MFM_t_8_mxi_977/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_978/analyze.ipynb to notebook
+[NbConvertApp] Writing 1823208 bytes to MFM_t_8_mxi_978/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_979/analyze.ipynb to notebook
+[NbConvertApp] Writing 1810614 bytes to MFM_t_8_mxi_979/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_980/analyze.ipynb to notebook
+[NbConvertApp] Writing 1817049 bytes to MFM_t_8_mxi_980/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_981/analyze.ipynb to notebook
+[NbConvertApp] Writing 1820041 bytes to MFM_t_8_mxi_981/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_982/analyze.ipynb to notebook
+[NbConvertApp] Writing 1814008 bytes to MFM_t_8_mxi_982/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_983/analyze.ipynb to notebook
+Traceback (most recent call last):
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/traitlets/config/application.py", line 1082, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 103, in preprocess
+    self.preprocess_cell(cell, resources, index)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbconvert/preprocessors/execute.py", line 124, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/home/gkaiwi58/.conda/envs/ferrocuda/lib/python3.14/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+# ============================================================
+# Main append block
+# ============================================================
+
+# 只有啟用 Excel 儲存與重複檢查時，才查詢既有 workbook。
+already_in_excel = (
+    SAVE_TO_EXCEL
+    and SKIP_IF_FOLDER_EXISTS
+    and folder_exists_in_excel(
+        EXCEL_PATH,
+        FOLDER_NAME,
+        sheet_name=EXPERIMENTS_SHEET_NAME,
+    )
+)
+
+if already_in_excel:
+    print(
+        f"[SKIP] {FOLDER_NAME} already exists "
+        f"in the {EXPERIMENTS_SHEET_NAME!r} sheet."
+    )
+
+else:
+    # --------------------------------------------------------
+    # 1. Read parameters
+    # --------------------------------------------------------
+    inputs_path = CASE_DIR / INPUTS_FILENAME
+
+    if not inputs_path.exists():
+        raise FileNotFoundError(
+            f"inputs not found: {inputs_path}"
+        )
+
+    # 使用你原本程式裡的 read_inputs()
+    if "read_inputs" not in globals():
+        raise NameError(
+            "read_inputs() is not defined. "
+            "Please run the inputs parsing cell first."
+        )
+
+    params_current = read_inputs(
+        inputs_path,
+    )
+
+    # --------------------------------------------------------
+    # 2. Read PV curve
+    # --------------------------------------------------------
+    pv_df_current = read_current_pv_curve(
+        case_dir=CASE_DIR,
+        folder_name=FOLDER_NAME,
+    )
+
+    # --------------------------------------------------------
+    # 3. Extract and optionally save Pz/Phi
+    # --------------------------------------------------------
+    if SAVE_NPZ:
+        pz_df_current = extract_current_pz_phi(
+            case_dir=CASE_DIR,
+            params=params_current,
+            pv_df=pv_df_current,
+            output_npz=NPZ_PATH,
+        )
+    else:
+        pz_df_current = pd.DataFrame(columns=PZ_INDEX_COLUMNS)
+        print("[SKIP] SAVE_NPZ=False; Pz/Phi extraction was skipped.")
+
+    # --------------------------------------------------
+    # 4. Calculate valid_loop
+    # --------------------------------------------------
+    csv_path = CASE_DIR / PV_CSV_RELATIVE_PATH
+
+    if csv_path.is_file():
+        print(f"Analyzing loop from CSV: {csv_path}")
+        loop_analyzer = loop_metrics.LoopAnalyzer(
+            open_threshold=OPEN_THRESHOLD,
+            close_threshold=CLOSE_THRESHOLD,
+        )
+        loop_result = loop_analyzer.analyze_csv(csv_path)
+        params_current["valid_loop"] = loop_result.valid_loop
+    else:
+        params_current["valid_loop"] = "no_data"
+
+    # --------------------------------------------------
+    # 5. Calculate has_multi
+    # --------------------------------------------------
+    npz_path = NPZ_PATH
+
+    if SAVE_NPZ and npz_path.is_file():
+        print(f"Analyzing multi-domain from NPZ: {npz_path}")
+        multi_analyzer = has_multi.MultiAnalyzer(
+            var_threshold=VAR_THRESHOLD,
+            z_index=None,
+        )
+        multi_result = multi_analyzer.analyze_npz(npz_path)
+        params_current["has_multi"] = multi_result.has_multi
+    else:
+        params_current["has_multi"] = "no_data"
+    # --------------------------------------------------------
+    # 6. Build experiments row
+    # --------------------------------------------------------
+    exp_df_current = build_experiment_dataframe(
+        case_dir=CASE_DIR,
+        params=params_current,
+        pv_df=pv_df_current,
+        pz_df=pz_df_current,
+        npz_path=NPZ_PATH if SAVE_NPZ else None,
+    )
+
+    # --------------------------------------------------------
+    # 7. Load or create Excel workbook
+    # --------------------------------------------------------
+    if SAVE_TO_EXCEL and EXCEL_PATH.exists():
+        workbook = load_workbook(
+            EXCEL_PATH
+        )
+    else:
+        workbook = Workbook()
+
+        # 移除 openpyxl 自動建立的 Sheet
+        default_sheet = workbook.active
+        workbook.remove(default_sheet)
+
+    # --------------------------------------------------------
+    # 8. Append all sheets in memory
+    # --------------------------------------------------------
+    append_dataframe_to_worksheet(
+    workbook=workbook,
+    sheet_name=EXPERIMENTS_SHEET_NAME,
+    dataframe=exp_df_current,
+    expected_columns=EXPERIMENT_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PV_SHEET_NAME,
+        dataframe=pv_df_current,
+        expected_columns=PV_COLUMNS,
+    )
+
+    append_dataframe_to_worksheet(
+        workbook=workbook,
+        sheet_name=PZ_INDEX_SHEET_NAME,
+        dataframe=pz_df_current,
+        expected_columns=PZ_INDEX_COLUMNS,
+    )
+
+    # 最後只 save 一次，避免只寫完一個 sheet 就中斷。
+    if SAVE_TO_EXCEL:
+        EXCEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+        workbook.save(EXCEL_PATH)
+        excel_status = str(EXCEL_PATH)
+    else:
+        excel_status = "not saved (SAVE_TO_EXCEL=False)"
+        print("[SKIP] Excel workbook was not created or modified.")
+
+    workbook.close()
+
+    print("=" * 60)
+    print("Analysis completed")
+    print("Folder     :", FOLDER_NAME)
+    print("Excel      :", excel_status)
+    print("PV points  :", len(pv_df_current))
+    print("Pz/Phi     :", len(pz_df_current))
+    print("=" * 60)
+------------------
+
+----- stdout -----
+MFM_t_8_mxi_983: CSV does not contain V_applied column. Using default sweep values.
+------------------
+
+[31m---------------------------------------------------------------------------[39m
+[31mValueError[39m                                Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[24][39m[32m, line 47[39m
+[32m     43[39m 
+[32m     44[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m     45[39m     [38;5;66;03m# 2. Read PV curve[39;00m
+[32m     46[39m     [38;5;66;03m# --------------------------------------------------------[39;00m
+[32m---> [39m[32m47[39m     pv_df_current = read_current_pv_curve(
+[32m     48[39m         case_dir=CASE_DIR,
+[32m     49[39m         folder_name=FOLDER_NAME,
+[32m     50[39m     )
+
+[36mCell[39m[36m [39m[32mIn[23][39m[32m, line 295[39m, in [36mread_current_pv_curve[39m[34m(case_dir, folder_name)[39m
+[32m    291[39m         print(f"{folder_name}: CSV does not contain V_applied column. Using default sweep values.")
+[32m    292[39m         sweep_values, sweep_branches = build_default_sweep()
+[32m    293[39m 
+[32m    294[39m         [38;5;28;01mif[39;00m n != len(sweep_values):
+[32m--> [39m[32m295[39m             raise ValueError(
+[32m    296[39m                 f"{folder_name}: CSV rows ({n}) do not match "
+[32m    297[39m                 f"default sweep points ({len(sweep_values)}).\n"
+[32m    298[39m                 f"Default sweep = "
+
+[31mValueError[39m: MFM_t_8_mxi_983: CSV rows (26) do not match default sweep points (37).
+Default sweep = -4.5 -> 4.5 -> -4.5
+
+[SKIP] MFM_t_8_mxi_983/analyze.ipynb 執行中止，繼續下一個
+[NbConvertApp] Converting notebook MFM_t_8_mxi_984/analyze.ipynb to notebook
+[NbConvertApp] Writing 1826577 bytes to MFM_t_8_mxi_984/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_985/analyze.ipynb to notebook
+[NbConvertApp] Writing 1811474 bytes to MFM_t_8_mxi_985/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_986/analyze.ipynb to notebook
+[NbConvertApp] Writing 1818150 bytes to MFM_t_8_mxi_986/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_987/analyze.ipynb to notebook
+[NbConvertApp] Writing 1811431 bytes to MFM_t_8_mxi_987/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_988/analyze.ipynb to notebook
+[NbConvertApp] Writing 1813858 bytes to MFM_t_8_mxi_988/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_989/analyze.ipynb to notebook
+[NbConvertApp] Writing 1798262 bytes to MFM_t_8_mxi_989/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_990/analyze.ipynb to notebook
+[NbConvertApp] Writing 1804241 bytes to MFM_t_8_mxi_990/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_991/analyze.ipynb to notebook
+[NbConvertApp] Writing 1792812 bytes to MFM_t_8_mxi_991/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_992/analyze.ipynb to notebook
+[NbConvertApp] Writing 1812348 bytes to MFM_t_8_mxi_992/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_993/analyze.ipynb to notebook
+[NbConvertApp] Writing 1817526 bytes to MFM_t_8_mxi_993/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_994/analyze.ipynb to notebook
+[NbConvertApp] Writing 1814092 bytes to MFM_t_8_mxi_994/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_995/analyze.ipynb to notebook
+[NbConvertApp] Writing 1819959 bytes to MFM_t_8_mxi_995/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_996/analyze.ipynb to notebook
+[NbConvertApp] Writing 1820596 bytes to MFM_t_8_mxi_996/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_997/analyze.ipynb to notebook
+[NbConvertApp] Writing 1817150 bytes to MFM_t_8_mxi_997/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_998/analyze.ipynb to notebook
+[NbConvertApp] Writing 1819137 bytes to MFM_t_8_mxi_998/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_999/analyze.ipynb to notebook
+[NbConvertApp] Writing 1823756 bytes to MFM_t_8_mxi_999/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1000/analyze.ipynb to notebook
+[NbConvertApp] Writing 1789302 bytes to MFM_t_8_mxi_1000/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1001/analyze.ipynb to notebook
+[NbConvertApp] Writing 1816751 bytes to MFM_t_8_mxi_1001/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1002/analyze.ipynb to notebook
+[NbConvertApp] Writing 1829386 bytes to MFM_t_8_mxi_1002/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1003/analyze.ipynb to notebook
+[NbConvertApp] Writing 1819383 bytes to MFM_t_8_mxi_1003/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1004/analyze.ipynb to notebook
+[NbConvertApp] Writing 1812781 bytes to MFM_t_8_mxi_1004/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1005/analyze.ipynb to notebook
+[NbConvertApp] Writing 1809778 bytes to MFM_t_8_mxi_1005/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1006/analyze.ipynb to notebook
+[NbConvertApp] Writing 1803963 bytes to MFM_t_8_mxi_1006/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1007/analyze.ipynb to notebook
+[NbConvertApp] Writing 1820823 bytes to MFM_t_8_mxi_1007/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1008/analyze.ipynb to notebook
+[NbConvertApp] Writing 1821426 bytes to MFM_t_8_mxi_1008/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1009/analyze.ipynb to notebook
+[NbConvertApp] Writing 1825108 bytes to MFM_t_8_mxi_1009/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1010/analyze.ipynb to notebook
+[NbConvertApp] Writing 1819469 bytes to MFM_t_8_mxi_1010/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1011/analyze.ipynb to notebook
+[NbConvertApp] Writing 1797039 bytes to MFM_t_8_mxi_1011/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1012/analyze.ipynb to notebook
+[NbConvertApp] Writing 1818940 bytes to MFM_t_8_mxi_1012/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1013/analyze.ipynb to notebook
+[NbConvertApp] Writing 1824006 bytes to MFM_t_8_mxi_1013/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1014/analyze.ipynb to notebook
+[NbConvertApp] Writing 1823540 bytes to MFM_t_8_mxi_1014/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1015/analyze.ipynb to notebook
+[NbConvertApp] Writing 1818593 bytes to MFM_t_8_mxi_1015/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1016/analyze.ipynb to notebook
+[NbConvertApp] Writing 1819008 bytes to MFM_t_8_mxi_1016/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1017/analyze.ipynb to notebook
+[NbConvertApp] Writing 1826691 bytes to MFM_t_8_mxi_1017/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1018/analyze.ipynb to notebook
+[NbConvertApp] Writing 1813427 bytes to MFM_t_8_mxi_1018/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1019/analyze.ipynb to notebook
+[NbConvertApp] Writing 1806221 bytes to MFM_t_8_mxi_1019/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1020/analyze.ipynb to notebook
+[NbConvertApp] Writing 1796723 bytes to MFM_t_8_mxi_1020/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1021/analyze.ipynb to notebook
+[NbConvertApp] Writing 1797815 bytes to MFM_t_8_mxi_1021/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1022/analyze.ipynb to notebook
+[NbConvertApp] Writing 1815327 bytes to MFM_t_8_mxi_1022/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1023/analyze.ipynb to notebook
+[NbConvertApp] Writing 1820290 bytes to MFM_t_8_mxi_1023/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1024/analyze.ipynb to notebook
+[NbConvertApp] Writing 1824427 bytes to MFM_t_8_mxi_1024/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1025/analyze.ipynb to notebook
+[NbConvertApp] Writing 1808918 bytes to MFM_t_8_mxi_1025/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1026/analyze.ipynb to notebook
+[NbConvertApp] Writing 1813303 bytes to MFM_t_8_mxi_1026/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1027/analyze.ipynb to notebook
+[NbConvertApp] Writing 1816818 bytes to MFM_t_8_mxi_1027/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1028/analyze.ipynb to notebook
+[NbConvertApp] Writing 1800699 bytes to MFM_t_8_mxi_1028/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1029/analyze.ipynb to notebook
+[NbConvertApp] Writing 1790636 bytes to MFM_t_8_mxi_1029/analyze.ipynb
+[NbConvertApp] Converting notebook MFM_t_8_mxi_1030/analyze.ipynb to notebook
+[NbConvertApp] Writing 1820906 bytes to MFM_t_8_mxi_1030/analyze.ipynb

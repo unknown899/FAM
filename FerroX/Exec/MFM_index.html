@@ -1,0 +1,248 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>MFM Dashboard</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 25px;
+}
+h1 {
+    margin-bottom: 10px;
+}
+.summary {
+    color: #000;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+.note {
+    color: #444;
+    font-size: 14px;
+    margin: 6px 0;
+}
+input {
+    width: 420px;
+    padding: 8px;
+    font-size: 15px;
+    margin: 15px 0;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+th {
+    position: sticky;
+    top: 0;
+    background: #f2f2f2;
+}
+th, td {
+    border: 1px solid #bbb;
+    padding: 8px;
+    text-align: center;
+}
+tr:nth-child(even) {
+    background: #fafafa;
+}
+tr:hover {
+    background: #ffffdd;
+}
+img {
+    max-width: 180px;
+    max-height: 120px;
+    transition: 0.2s;
+}
+img:hover {
+    transform: scale(1.8);
+    position: relative;
+    z-index: 100;
+}
+</style>
+</head>
+<body>
+<h1>MFM Dashboard</h1>
+<div class="summary">
+    <div>Last Update: <span id="last_update">2026-08-19 20:13:42</span></div>
+    <div>Total Experiments: <span id="total_exp">1</span></div>
+</div>
+<p class="note">* Numeric parameters are displayed in SI units.</p>
+<p class="note">* Search example: valid_loop=1 has_multi=0</p>
+<p class="note">* Text values are supported: has_multi=no_data</p>
+<input id="search" placeholder="Search...">
+<table id="tbl">
+<thead>
+<tr>
+<th>Folder</th>
+<th>alpha</th>
+<th>beta</th>
+<th>gamma</th>
+<th>BigGamma</th>
+<th>g11</th>
+<th>g44</th>
+<th>Ec</th>
+<th>Pr</th>
+<th>Pc0</th>
+<th>rp</th>
+<th>landau_consistency_pass</th>
+<th>valid_loop</th>
+<th>has_multi</th>
+<th>T_FE</th>
+<th>Start Time</th>
+<th>End Time</th>
+<th>Elapsed</th>
+<th>PV Curve</th>
+<th>Pz Stack</th>
+</tr>
+</thead>
+<tbody>
+
+
+
+<tr>
+<td>MFM_p_8_mxi_164_t</td><td>-7.569e+09</td><td>1.230e+13</td><td>4.610e+15</td><td>5.000e+01</td><td>1.000e-09</td><td>1.000e-09</td><td>6.985e+07</td><td>2.271e-02</td><td>1.356e-02</td><td>1.674e+00</td><td>True</td><td>1</td><td>0</td><td>8.000e-09</td><td>2026-08-19 18:46:58.281857</td><td>2026-08-19 18:48:09</td><td>00:01:10</td>
+<td>
+<a href="MFM_p_8_mxi_164_t/figs/MFM_PV_curve.png" target="_blank">
+<img src="MFM_p_8_mxi_164_t/figs/MFM_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFM_p_8_mxi_164_t/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFM_p_8_mxi_164_t/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+
+</tr>
+<tr>
+<td>MFM_p_8_mxi_164_tt</td><td>-5.124e+08</td><td>1.634e+11</td><td>4.427e+13</td><td>1.000e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>1.000e+07</td><td>4.500e-02</td><td>2.783e-02</td><td>1.617e+00</td><td>True</td><td>1</td><td>0</td><td>8.000e-09</td><td>2026-08-19 19:55:43.064279</td><td>2026-08-19 19:57:18</td><td>00:01:34</td>
+<td>
+<a href="MFM_p_8_mxi_164_tt/figs/MFM_PV_curve.png" target="_blank">
+<img src="MFM_p_8_mxi_164_tt/figs/MFM_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFM_p_8_mxi_164_tt/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFM_p_8_mxi_164_tt/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+
+</tr>
+<tr>
+<td>MFM_p_8_mxi_164_t3</td><td>-4.100e+08</td><td>1.307e+11</td><td>3.541e+13</td><td>1.200e+02</td><td>1.000e-09</td><td>1.000e-09</td><td>8.000e+06</td><td>4.500e-02</td><td>2.783e-02</td><td>1.617e+00</td><td>True</td><td>1</td><td>0</td><td>8.000e-09</td><td>2026-08-19 20:10:08.395003</td><td>2026-08-19 20:11:54</td><td>00:01:45</td>
+<td>
+<a href="MFM_p_8_mxi_164_t3/figs/MFM_PV_curve.png" target="_blank">
+<img src="MFM_p_8_mxi_164_t3/figs/MFM_PV_curve.png">
+</a>
+</td>
+
+<td>
+<a href="MFM_p_8_mxi_164_t3/figs/Pz_FE_layer_stack.png" target="_blank">
+<img src="MFM_p_8_mxi_164_t3/figs/Pz_FE_layer_stack.png">
+</a>
+</td>
+
+</tr>
+</tbody>
+</table>
+<script>
+const search = document.getElementById("search");
+
+function parseValue(text) {
+    const cleaned = text.trim();
+    const lowered = cleaned.toLowerCase();
+
+    if (lowered === "true") return 1;
+    if (lowered === "false") return 0;
+
+    const numberValue = Number(cleaned);
+    if (cleaned !== "" && Number.isFinite(numberValue)) {
+        return numberValue;
+    }
+    return lowered;
+}
+
+function parseCondition(text) {
+    const match = text.match(/^([^<>=\s]+)(<=|>=|=|<|>)(.+)$/);
+    if (!match) return null;
+
+    return {
+        key: match[1].trim().toLowerCase(),
+        operator: match[2],
+        value: parseValue(match[3])
+    };
+}
+
+function valuesEqual(left, right) {
+    if (typeof left === "number" && typeof right === "number") {
+        return left === right;
+    }
+    return String(left).toLowerCase() === String(right).toLowerCase();
+}
+
+function updateTable() {
+    const filter = search.value.trim();
+    const tableRows = document.querySelectorAll("#tbl tbody tr");
+    const headers = Array.from(
+        document.querySelectorAll("#tbl thead th")
+    ).map(header => header.textContent.trim().toLowerCase());
+
+    const conditions = filter === ""
+        ? []
+        : filter.split(/\s+/).map(parseCondition).filter(Boolean);
+
+    let count = 0;
+
+    tableRows.forEach(tableRow => {
+        const cells = tableRow.querySelectorAll("td");
+        const rowValues = {};
+
+        headers.forEach((header, index) => {
+            rowValues[header] = parseValue(cells[index].textContent);
+        });
+
+        let show = true;
+
+        for (const condition of conditions) {
+            const left = rowValues[condition.key];
+            const right = condition.value;
+
+            if (left === undefined) {
+                show = false;
+                break;
+            }
+
+            if (condition.operator === "=") {
+                show = valuesEqual(left, right);
+            } else if (
+                typeof left !== "number" ||
+                typeof right !== "number"
+            ) {
+                show = false;
+            } else if (condition.operator === ">") {
+                show = left > right;
+            } else if (condition.operator === "<") {
+                show = left < right;
+            } else if (condition.operator === ">=") {
+                show = left >= right;
+            } else if (condition.operator === "<=") {
+                show = left <= right;
+            }
+
+            if (!show) break;
+        }
+
+        tableRow.style.display = show ? "" : "none";
+        if (show) count += 1;
+    });
+
+    document.getElementById("total_exp").textContent = count;
+}
+
+search.addEventListener("input", updateTable);
+updateTable();
+</script>
+</body>
+</html>

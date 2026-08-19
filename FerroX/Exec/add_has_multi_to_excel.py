@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""Calculate ``has_multi`` and update an Excel workbook.
+"""Calculate ``has_multi`` for any FerroX structure and update Excel.
 
 Use ``python add_has_multi_to_excel.py --help`` for the complete workflow and
 copyable examples.
 
-For each ``extracted_pz/<case>/Pz_Phi_FE_all_voltage.npz``, inspect
-``Pz_stack[voltage_index, :, z_index]``. A case has multiple domains when at
-least one voltage slice satisfies both conditions:
+By default ``--structure MFIS`` selects ``MFIS_dataset.xlsx`` and cases matching
+``MFIS*`` below ``extracted_pz``.  MFIM, MFM, and custom structures can use the
+same script.  Workbook/sheet/columns, NPZ directory/name/key, case extraction,
+and z selection are configurable.
+
+For each selected NPZ, inspect ``Pz_stack[voltage_index, :, z_index]``. A case
+has multiple domains when at least one voltage slice satisfies both conditions:
 
     abs(P_max - P_min) > var_threshold
     P_max > 0 and P_min < 0
@@ -14,36 +18,36 @@ least one voltage slice satisfies both conditions:
 Every nonblank experiment row is updated. If its case has no corresponding
 NPZ, ``has_multi`` is set to ``no_data`` and processing continues.
 
-With ``--dry-run``, proposed values are written only to a temporary workbook.
-``build_dash.py`` uses that workbook to generate an HTML preview, after which
-the temporary workbook is deleted. Without ``--dry-run``, the workbook chosen
-by ``--excel`` is updated (or written to ``--output`` when supplied).
+With ``--dry-run``, the real workbook is not changed.  Use ``--no-preview`` for
+a dependency-free dry run, or leave preview enabled when ``build_dash.py`` is
+available.
 """
 
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import math
 import os
 import tempfile
 from copy import copy
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-import build_dash
-from utils import has_multi
-
-
-DEFAULT_EXCEL_NAME = "MFIS_dataset.xlsx"
+DEFAULT_STRUCTURE = "MFIS"
 DEFAULT_EXTRACTED_PZ_DIR = "extracted_pz"
 DEFAULT_SHEET_NAME = "experiments"
 DEFAULT_HAS_MULTI_COLUMN = "has_multi"
 DEFAULT_NPZ_NAME = "Pz_Phi_FE_all_voltage.npz"
 DEFAULT_PREVIEW_HTML = "index.html"
 DEFAULT_MISSING_LABEL = "no_data"
+DEFAULT_NPZ_KEY = "Pz_stack"
+DEFAULT_Z_INDEX = 5
 
 # Checked in this order when --case-column is omitted.
 CASE_COLUMN_CANDIDATES = (
@@ -70,39 +74,35 @@ HELP_EPILOG = r"""
   no_data 該 Excel case 找不到對應 NPZ（可用 --missing-label 修改）
 
 Excel 欄位:
-  完全沿用 add_EPR 的新增欄位邏輯：新欄繼承 gamma 欄格式，並延伸
-  AutoFilter 與 Excel Table；欄位已存在時也會補齊表頭、格式與篩選範圍。
+  新欄預設優先繼承 gamma 欄格式；沒有 gamma 時改用 case-name 欄。
+  也可用 --style-source-column 明確指定。
 
-範例 1：使用預設 Excel 與 index.html 預覽
+範例 1：預覽 MFIM，不改 Excel、不產生 HTML
+  python add_has_multi_to_excel.py \
+      --structure MFIM \
+      --var-threshold 0.1 \
+      --dry-run --no-preview
+
+範例 2：正式寫入 MFIM_dataset.xlsx
+  python add_has_multi_to_excel.py \
+      --structure MFIM \
+      --var-threshold 0.1
+
+範例 3：自訂 workbook、NPZ 檔名/key，並掃描所有 z
   python add_has_multi_to_excel.py \
       --var-threshold 0.1 \
-      --dry-run
-
-  預設讀取 MFIS_dataset.xlsx 與 extracted_pz/，正式 Excel 不會改變。
-
-範例 2：指定 Excel、資料目錄與預覽 HTML
-  python add_has_multi_to_excel.py \
-      --var-threshold 0.1 \
-      --excel other_dataset.xlsx \
-      --extracted-pz-dir extracted_pz \
-      --html has_multi_preview.html \
-      --dry-run
-
-範例 3：確認後寫回原 Excel
-  python add_has_multi_to_excel.py \
-      --var-threshold 0.1 \
-      --excel other_dataset.xlsx
-
-範例 4：確認後另存新 Excel
-  python add_has_multi_to_excel.py \
-      --var-threshold 0.1 \
-      --excel MFIS_dataset.xlsx \
-      --output MFIS_dataset_with_has_multi.xlsx
+      --excel custom.xlsx \
+      --sheet runs --case-column case_id \
+      --case-glob 'run_*' \
+      --extracted-pz-dir arrays \
+      --npz-name fields.npz \
+      --npz-key polarization_stack \
+      --z-index all
 
 在其他 Python 程式中重用核心判別:
-  from utils import has_multi
+  from add_has_multi_to_excel import MultiAnalyzer
 
-  analyzer = has_multi.MultiAnalyzer(var_threshold=0.1, z_index=5)
+  analyzer = MultiAnalyzer(var_threshold=0.1, z_index=None)
   result = analyzer.analyze_npz("Pz_Phi_FE_all_voltage.npz")
   print(result.has_multi)
 
@@ -149,13 +149,29 @@ def positive_int(text: str) -> int:
     return value
 
 
+def z_index_value(text: str) -> int | None:
+    """Accept a non-negative index or ``all``/``none`` for every z slice."""
+
+    if text.strip().casefold() in {"all", "none"}:
+        return None
+    return nonnegative_int(text)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Set experiments.has_multi using Pz_stack data under extracted_pz."
+            "Set a multi-domain flag using a configurable NPZ polarization stack."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=HELP_EPILOG,
+    )
+    parser.add_argument(
+        "--structure",
+        default=DEFAULT_STRUCTURE,
+        help=(
+            "Structure label used by defaults: <structure>_dataset.xlsx and "
+            "case glob <structure>* (default: MFIS)."
+        ),
     )
     parser.add_argument(
         "--var-threshold",
@@ -175,11 +191,8 @@ def parse_args() -> argparse.Namespace:
         "--excel-path",
         dest="excel",
         type=Path,
-        default=Path(DEFAULT_EXCEL_NAME),
-        help=(
-            "Excel filename/path, relative to --root unless absolute "
-            f"(default: {DEFAULT_EXCEL_NAME})."
-        ),
+        default=None,
+        help="Workbook path; default: <structure>_dataset.xlsx under --root.",
     )
     parser.add_argument(
         "--output",
@@ -188,12 +201,21 @@ def parse_args() -> argparse.Namespace:
         help="Optional output workbook. By default, update --excel in place.",
     )
     parser.add_argument(
+        "--case-glob",
+        default=None,
+        help=(
+            "Select case names in both NPZ data and Excel; default: "
+            "<structure>*. Use '*' for every case."
+        ),
+    )
+    parser.add_argument(
         "--extracted-pz-dir",
         type=Path,
-        default=Path(DEFAULT_EXTRACTED_PZ_DIR),
+        default=None,
         help=(
-            "Directory searched recursively for NPZ files, relative to --root "
-            f"unless absolute (default: {DEFAULT_EXTRACTED_PZ_DIR})."
+            "Directory searched recursively for NPZ files, relative to "
+            "--root unless absolute "
+            "(default: extracted_pz/<structure>)."
         ),
     )
     parser.add_argument(
@@ -223,20 +245,50 @@ def parse_args() -> argparse.Namespace:
         help=f"Column to create/update (default: {DEFAULT_HAS_MULTI_COLUMN}).",
     )
     parser.add_argument(
+        "--style-source-column",
+        default=None,
+        help=(
+            "Column whose style is copied to the output column. Default: "
+            "gamma when present, otherwise the case-name column."
+        ),
+    )
+    parser.add_argument(
         "--npz-name",
         default=DEFAULT_NPZ_NAME,
         help=f"NPZ basename to discover recursively (default: {DEFAULT_NPZ_NAME}).",
     )
     parser.add_argument(
+        "--npz-key",
+        default=DEFAULT_NPZ_KEY,
+        help=f"Array key inside each NPZ (default: {DEFAULT_NPZ_KEY}).",
+    )
+    parser.add_argument(
+        "--case-parent-level",
+        type=positive_int,
+        default=1,
+        help=(
+            "Which NPZ ancestor supplies the case name: 1=parent, 2=grandparent, "
+            "... (default: 1)."
+        ),
+    )
+    parser.add_argument(
         "--z-index",
-        type=nonnegative_int,
-        default=has_multi.DEFAULT_Z_INDEX,
-        help=f"Third-dimension index in Pz_stack (default: {has_multi.DEFAULT_Z_INDEX}).",
+        type=z_index_value,
+        default=DEFAULT_Z_INDEX,
+        help=(
+            f"Third-dimension index (default: {DEFAULT_Z_INDEX}); use 'all' "
+            "to inspect every z slice."
+        ),
     )
     parser.add_argument(
         "--missing-label",
         default=DEFAULT_MISSING_LABEL,
         help=f"Value for Excel cases without NPZ data (default: {DEFAULT_MISSING_LABEL}).",
+    )
+    parser.add_argument(
+        "--no-preview",
+        action="store_true",
+        help="With --dry-run, skip build_dash.py and HTML generation.",
     )
     parser.add_argument(
         "--dry-run",
@@ -260,8 +312,12 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     args = parser.parse_args()
+    if not args.structure.strip():
+        parser.error("--structure cannot be empty.")
     if not args.npz_name.strip():
         parser.error("--npz-name cannot be empty.")
+    if not args.npz_key.strip():
+        parser.error("--npz-key cannot be empty.")
     if not args.has_multi_column.strip():
         parser.error("--has-multi-column cannot be empty.")
     return args
@@ -302,8 +358,90 @@ def normalized_case_name(value: object) -> str:
     return "" if value is None else str(value).strip()
 
 
-def discover_npz_files(extracted_pz_dir: Path, npz_name: str) -> dict[str, Path]:
-    """Map each NPZ parent-directory name to its path."""
+@dataclass(frozen=True, slots=True)
+class MultiResult:
+    has_multi: int
+    voltage_index: int | None = None
+    z_index: int | None = None
+    p_min: float | None = None
+    p_max: float | None = None
+
+    @property
+    def variation(self) -> float | None:
+        if self.p_min is None or self.p_max is None:
+            return None
+        return abs(self.p_max - self.p_min)
+
+
+@dataclass(frozen=True, slots=True)
+class MultiAnalyzer:
+    var_threshold: float
+    z_index: int | None = DEFAULT_Z_INDEX
+    npz_key: str = DEFAULT_NPZ_KEY
+
+    def analyze_npz(self, npz_path: str | Path) -> MultiResult:
+        path = Path(npz_path)
+        try:
+            with np.load(path, allow_pickle=False) as data:
+                if self.npz_key not in data.files:
+                    raise RuntimeError(
+                        f"array key {self.npz_key!r} not found in {path}; "
+                        f"available: {data.files}"
+                    )
+                stack = np.asarray(data[self.npz_key])
+        except (OSError, ValueError) as exc:
+            raise RuntimeError(f"failed to read {path}: {exc}") from exc
+
+        if stack.ndim != 3:
+            raise RuntimeError(
+                f"{path}: expected a 3D array [voltage, x, z], got {stack.shape}"
+            )
+        if stack.shape[0] == 0 or stack.shape[1] == 0 or stack.shape[2] == 0:
+            raise RuntimeError(f"{path}: polarization stack has an empty axis")
+
+        if self.z_index is None:
+            z_indices = range(stack.shape[2])
+        else:
+            if not 0 <= self.z_index < stack.shape[2]:
+                raise RuntimeError(
+                    f"{path}: z_index={self.z_index}, valid range is "
+                    f"0..{stack.shape[2] - 1}"
+                )
+            z_indices = (self.z_index,)
+
+        for voltage_index in range(stack.shape[0]):
+            for z_index in z_indices:
+                line = np.asarray(stack[voltage_index, :, z_index], dtype=float)
+                if not np.all(np.isfinite(line)):
+                    raise RuntimeError(
+                        f"{path}: non-finite value at voltage_index="
+                        f"{voltage_index}, z_index={z_index}"
+                    )
+                p_min = float(np.min(line))
+                p_max = float(np.max(line))
+                if (
+                    abs(p_max - p_min) > self.var_threshold
+                    and p_max > 0
+                    and p_min < 0
+                ):
+                    return MultiResult(
+                        has_multi=1,
+                        voltage_index=voltage_index,
+                        z_index=z_index,
+                        p_min=p_min,
+                        p_max=p_max,
+                    )
+        return MultiResult(has_multi=0)
+
+
+def discover_npz_files(
+    extracted_pz_dir: Path,
+    npz_name: str,
+    *,
+    case_glob: str,
+    case_parent_level: int,
+) -> dict[str, Path]:
+    """Map selected case names to unique NPZ paths."""
 
     if not extracted_pz_dir.is_dir():
         raise FileNotFoundError(
@@ -312,9 +450,16 @@ def discover_npz_files(extracted_pz_dir: Path, npz_name: str) -> dict[str, Path]
 
     result: dict[str, Path] = {}
     for npz_path in sorted(extracted_pz_dir.rglob(npz_name)):
-        case_name = npz_path.parent.name.strip()
+        try:
+            case_name = npz_path.parents[case_parent_level - 1].name.strip()
+        except IndexError as exc:
+            raise ValueError(
+                f"Cannot get ancestor level {case_parent_level} for {npz_path}"
+            ) from exc
         if not case_name:
             raise ValueError(f"Cannot determine the case name for {npz_path}.")
+        if not fnmatch.fnmatchcase(case_name, case_glob):
+            continue
         if case_name in result:
             raise ValueError(
                 f"Duplicate NPZ files found for case {case_name!r}:\n"
@@ -372,6 +517,21 @@ def find_case_column(
         f"Could not find case-name column {wanted} in row {header_row}. "
         f"Available columns: {available}"
     )
+
+
+def find_style_source_column(
+    worksheet: Worksheet,
+    *,
+    header_row: int,
+    requested_name: str | None,
+    fallback_column: int,
+) -> int:
+    if requested_name is not None:
+        return _find_header_column(worksheet, header_row, {requested_name})
+    try:
+        return _find_header_column(worksheet, header_row, {"gamma", "γ"})
+    except KeyError:
+        return fallback_column
 
 
 def _ensure_output_column(
@@ -514,7 +674,7 @@ def save_workbook_atomically(workbook: object, output_path: Path) -> None:
         temporary_path.unlink(missing_ok=True)
 
 
-def format_result(case_name: str, result: has_multi.MultiResult) -> str:
+def format_result(case_name: str, result: MultiResult) -> str:
     if not result.has_multi:
         return f"{case_name}: has_multi=0"
 
@@ -523,7 +683,8 @@ def format_result(case_name: str, result: has_multi.MultiResult) -> str:
     assert result.p_max is not None
     assert result.variation is not None
     return (
-        f"{case_name}: has_multi={result.has_multi} | voltage_index={result.voltage_index}, "
+        f"{case_name}: has_multi={result.has_multi} | "
+        f"voltage_index={result.voltage_index}, z_index={result.z_index}, "
         f"P_min={result.p_min:.8g}, P_max={result.p_max:.8g}, "
         f"variation={result.variation:.8g}" 
     )
@@ -534,29 +695,54 @@ def run(args: argparse.Namespace) -> int:
     if not root.is_dir():
         raise NotADirectoryError(f"Execution directory does not exist: {root}")
 
-    excel_path = resolve_under_root(args.excel.expanduser(), root).resolve()
+    excel_argument = (
+        args.excel
+        if args.excel is not None
+        else Path(f"{args.structure}_dataset.xlsx")
+    )
+    excel_path = resolve_under_root(excel_argument.expanduser(), root).resolve()
     output_path = (
         excel_path
         if args.output is None
         else resolve_under_root(args.output.expanduser(), root).resolve()
     )
+    extracted_pz_argument = (
+        args.extracted_pz_dir
+        if args.extracted_pz_dir is not None
+        else Path(DEFAULT_EXTRACTED_PZ_DIR) / args.structure
+    )
+
     extracted_pz_dir = resolve_under_root(
-        args.extracted_pz_dir.expanduser(), root
+        extracted_pz_argument.expanduser(),
+        root,
     ).resolve()
     preview_html_path = resolve_under_root(
         args.preview_html.expanduser(), root
     ).resolve()
     if not excel_path.is_file():
         raise FileNotFoundError(f"Workbook does not exist: {excel_path}")
+    if excel_path.suffix.casefold() not in {".xlsx", ".xlsm"}:
+        raise ValueError("--excel must be an .xlsx or .xlsm workbook")
+    if output_path.suffix.casefold() not in {".xlsx", ".xlsm"}:
+        raise ValueError("--output must use the .xlsx or .xlsm extension")
 
-    npz_paths = discover_npz_files(extracted_pz_dir, args.npz_name)
+    case_glob = args.case_glob or f"{args.structure}*"
+    if not case_glob.strip():
+        raise ValueError("--case-glob cannot be empty")
+    npz_paths = discover_npz_files(
+        extracted_pz_dir,
+        args.npz_name,
+        case_glob=case_glob,
+        case_parent_level=args.case_parent_level,
+    )
     print(f"Discovered NPZ files: {len(npz_paths)}")
 
-    analyzer = has_multi.MultiAnalyzer(
+    analyzer = MultiAnalyzer(
         var_threshold=args.var_threshold,
         z_index=args.z_index,
+        npz_key=args.npz_key,
     )
-    results: dict[str, has_multi.MultiResult] = {}
+    results: dict[str, MultiResult] = {}
     errors: list[str] = []
     for case_name, npz_path in npz_paths.items():
         try:
@@ -574,7 +760,8 @@ def run(args: argparse.Namespace) -> int:
             f"could not be evaluated:\n{details}"
         )
 
-    workbook = load_workbook(excel_path)
+    keep_vba = excel_path.suffix.casefold() == ".xlsm"
+    workbook = load_workbook(excel_path, keep_vba=keep_vba, keep_links=True)
     try:
         if args.sheet not in workbook.sheetnames:
             raise KeyError(
@@ -587,10 +774,11 @@ def run(args: argparse.Namespace) -> int:
             args.header_row,
             args.case_column,
         )
-        gamma_column = _find_header_column(
+        style_column = find_style_source_column(
             worksheet,
-            args.header_row,
-            {"gamma", "γ"},
+            header_row=args.header_row,
+            requested_name=args.style_source_column,
+            fallback_column=case_column,
         )
 
         old_max_column = worksheet.max_column
@@ -598,7 +786,7 @@ def run(args: argparse.Namespace) -> int:
             worksheet,
             args.header_row,
             args.has_multi_column,
-            gamma_column,
+            style_column,
         )
 
         _extend_filter_and_tables(
@@ -612,7 +800,7 @@ def run(args: argparse.Namespace) -> int:
         _repair_existing_output_column(
             worksheet,
             header_row=args.header_row,
-            style_source_column=gamma_column,
+            style_source_column=style_column,
             output_column=has_multi_column,
             width=14.0,
         )
@@ -628,6 +816,8 @@ def run(args: argparse.Namespace) -> int:
                 worksheet.cell(row=row_number, column=case_column).value
             )
             if not case_name:
+                continue
+            if not fnmatch.fnmatchcase(case_name, case_glob):
                 continue
 
             result = results.get(case_name)
@@ -647,7 +837,7 @@ def run(args: argparse.Namespace) -> int:
                 column=has_multi_column,
             )
             _copy_style(
-                worksheet.cell(row_number, gamma_column),
+                worksheet.cell(row_number, style_column),
                 target_cell,
             )
             target_cell.value = value
@@ -656,8 +846,8 @@ def run(args: argparse.Namespace) -> int:
 
         if updated_rows == 0:
             raise RuntimeError(
-                f"No nonblank case was found in worksheet column "
-                f"{detected_case_column!r}; no changes were saved."
+                f"No nonblank case matching {case_glob!r} was found in "
+                f"worksheet column {detected_case_column!r}; no changes were saved."
             )
 
         unmatched_npz_cases = sorted(set(results) - matched_cases)
@@ -669,30 +859,38 @@ def run(args: argparse.Namespace) -> int:
 
         print(f"Case-name column: {detected_case_column}")
         if args.dry_run:
-            descriptor, temporary_name = tempfile.mkstemp(
-                prefix=f".{excel_path.stem}.has_multi_preview.",
-                suffix=".xlsx",
-                dir=root,
-            )
-            os.close(descriptor)
-            temporary_excel_path = Path(temporary_name)
-            try:
-                workbook.save(temporary_excel_path)
-                build_dash.build_dashboard(
-                    temporary_excel_path,
-                    data_root=root,
-                    output_path=preview_html_path,
-                    sheet_name=args.sheet,
+            if not args.no_preview:
+                descriptor, temporary_name = tempfile.mkstemp(
+                    prefix=f".{excel_path.stem}.has_multi_preview.",
+                    suffix=excel_path.suffix,
+                    dir=root,
                 )
-            finally:
-                temporary_excel_path.unlink(missing_ok=True)
+                os.close(descriptor)
+                temporary_excel_path = Path(temporary_name)
+                try:
+                    try:
+                        import build_dash
+                    except ImportError as exc:
+                        raise RuntimeError(
+                            "HTML preview requires build_dash.py; rerun with "
+                            "--no-preview for a dependency-free dry run"
+                        ) from exc
+                    workbook.save(temporary_excel_path)
+                    build_dash.build_dashboard(
+                        temporary_excel_path,
+                        data_root=root,
+                        output_path=preview_html_path,
+                        sheet_name=args.sheet,
+                    )
+                finally:
+                    temporary_excel_path.unlink(missing_ok=True)
+                print(f"Preview dashboard: {preview_html_path}")
 
             print(
                 f"[DRY RUN] Would update {updated_rows} worksheet row(s): "
                 f"{positive_rows} has_multi=1, {negative_rows} has_multi=0, "
                 f"{missing_rows} {args.missing_label!r}."
             )
-            print(f"Preview dashboard: {preview_html_path}")
         else:
             save_workbook_atomically(workbook, output_path)
             print(

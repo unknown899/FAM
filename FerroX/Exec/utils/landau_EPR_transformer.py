@@ -387,3 +387,201 @@ __all__ = [
     "get_transition_info",
     "landau_to_EPR",
 ]
+
+
+# =============================================================================
+# Command-line interface (safe for imports)
+# =============================================================================
+# This block runs only when this file is executed directly. Importing any of
+# the functions above from another Python file will not execute this block.
+if __name__ == "__main__":
+    import argparse
+    import re
+
+    parser = argparse.ArgumentParser(
+        description=(
+            "Convert sixth-order Landau parameters and intrinsic EPR "
+            "parameters, then run the consistency test."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  Landau -> EPR:
+    python landau_EPR_transformer.py --mode landau_to_EPR --alpha -7.4e9 --beta 1.4e12 --gamma 5.0e12
+
+  EPR -> Landau, using rp:
+    python landau_EPR_transformer.py --mode EPR_to_landau --Ec 2.064e8 --Pr 7.204e-2 --rp 1.725
+
+  EPR -> Landau, using Pc0:
+    python landau_EPR_transformer.py --mode EPR_to_landau --Ec 2.064e8 --Pr 7.204e-2 --Pc0 4.176e-2
+
+  EPR -> Landau, supplying both Pc0 and rp for relation checking:
+    python landau_EPR_transformer.py --mode EPR_to_landau --Ec 2.064e8 --Pr 7.204e-2 --Pc0 4.176231884057971e-2 --rp 1.725
+""",
+    )
+    # argparse's default negative-number matcher does not recognize scientific
+    # notation such as -7.4e9 when it follows an option as a separate token.
+    parser._negative_number_matcher = re.compile(
+        r"^-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$"
+    )
+    parser.add_argument(
+        "--mode",
+        required=True,
+        choices=("landau_to_EPR", "EPR_to_landau"),
+        help="Select the conversion direction.",
+    )
+
+    landau_group = parser.add_argument_group("Landau input")
+    landau_group.add_argument(
+        "--alpha",
+        type=float,
+        help="Landau alpha; required for landau_to_EPR.",
+    )
+    landau_group.add_argument(
+        "--beta",
+        type=float,
+        help="Landau beta; required for landau_to_EPR.",
+    )
+    landau_group.add_argument(
+        "--gamma",
+        type=float,
+        help="Landau gamma; required for landau_to_EPR.",
+    )
+
+    epr_group = parser.add_argument_group("EPR input")
+    epr_group.add_argument(
+        "--Ec",
+        "--ec",
+        dest="Ec",
+        type=float,
+        help="Positive coercive-field magnitude; required for EPR_to_landau.",
+    )
+    epr_group.add_argument(
+        "--Pr",
+        "--pr",
+        dest="Pr",
+        type=float,
+        help="Positive remanent polarization; required for EPR_to_landau.",
+    )
+    epr_group.add_argument(
+        "--Pc0",
+        "--pc0",
+        dest="Pc0",
+        type=float,
+        help="Positive spinodal polarization; supply Pc0, rp, or both.",
+    )
+    epr_group.add_argument(
+        "--rp",
+        type=float,
+        help="Polarization ratio Pr/Pc0; supply Pc0, rp, or both.",
+    )
+
+    test_group = parser.add_argument_group("Consistency-test options")
+    test_group.add_argument(
+        "--rtol",
+        type=float,
+        default=1.0e-9,
+        help="Relative tolerance (default: %(default).1e).",
+    )
+    test_group.add_argument(
+        "--atol",
+        type=float,
+        default=0.0,
+        help="Absolute tolerance (default: %(default)g).",
+    )
+
+    args = parser.parse_args()
+
+    def _require_arguments(*names: str) -> None:
+        missing = [f"--{name}" for name in names if getattr(args, name) is None]
+        if missing:
+            parser.error(
+                f"mode {args.mode!r} requires: {', '.join(missing)}"
+            )
+
+    def _print_dataclass(title: str, result: object) -> None:
+        print(f"\n{title}")
+        print("-" * len(title))
+        for field_name in result.__dataclass_fields__:
+            value = getattr(result, field_name)
+            if isinstance(value, float):
+                print(f"{field_name}: {value:.12e}")
+            else:
+                print(f"{field_name}: {value}")
+
+    try:
+        if args.mode == "landau_to_EPR":
+            _require_arguments("alpha", "beta", "gamma")
+            input_parameters = {
+                "alpha": args.alpha,
+                "beta": args.beta,
+                "gamma": args.gamma,
+            }
+            transformed = landau_to_EPR(**input_parameters)
+            consistency = check_landau_EPR(
+                args.alpha,
+                args.beta,
+                args.gamma,
+                transformed.Ec,
+                transformed.Pr,
+                transformed.Pc0,
+                transformed.rp,
+                rtol=args.rtol,
+                atol=args.atol,
+            )
+            result_title = "EPR result"
+
+        else:
+            _require_arguments("Ec", "Pr")
+            if args.Pc0 is None and args.rp is None:
+                parser.error(
+                    "mode 'EPR_to_landau' requires --Pc0, --rp, or both"
+                )
+
+            input_parameters = {"Ec": args.Ec, "Pr": args.Pr}
+            if args.Pc0 is not None:
+                input_parameters["Pc0"] = args.Pc0
+            if args.rp is not None:
+                input_parameters["rp"] = args.rp
+
+            transformed = EPR_to_landau(
+                **input_parameters,
+                relation_rtol=args.rtol,
+                relation_atol=args.atol,
+            )
+
+            Ec = args.Ec
+            Pr = args.Pr
+            if args.Pc0 is None:
+                rp = args.rp
+                Pc0 = Pr / rp
+            elif args.rp is None:
+                Pc0 = args.Pc0
+                rp = Pr / Pc0
+            else:
+                Pc0 = args.Pc0
+                rp = args.rp
+
+            consistency = check_landau_EPR(
+                transformed.alpha,
+                transformed.beta,
+                transformed.gamma,
+                Ec,
+                Pr,
+                Pc0,
+                rp,
+                rtol=args.rtol,
+                atol=args.atol,
+            )
+            result_title = "Landau result"
+
+    except (ArithmeticError, ValueError) as error:
+        parser.error(str(error))
+
+    print(f"Selected mode: {args.mode}")
+    print(f"Input parameters: {input_parameters}")
+    _print_dataclass(result_title, transformed)
+    _print_dataclass("Consistency test", consistency)
+    print(f"\nOverall consistency: {'PASS' if consistency.passed else 'FAIL'}")
+
+    

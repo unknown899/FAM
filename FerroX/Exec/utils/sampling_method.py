@@ -16,6 +16,11 @@ Supported global designs
     Generate a large LHS pool and greedily select points that maximize their
     nearest-neighbour distance from supplied reference points and from points
     already selected in the same batch.
+``screening``
+    Deterministic coarse range screening for expensive FerroX runs.  The first
+    15 accepted points prioritize the box center, 8 corners, and 6 face centers.
+    If more points are requested, the design is augmented from a 5-level lattice
+    using maximin distance in normalized EPR coordinates.
 
 Supported local / variation designs
 -----------------------------------
@@ -37,12 +42,14 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from typing import Callable, Iterable, Sequence
+from pathlib import Path
+import pandas as pd
 
 import numpy as np
 
 
 EPR_PARAMETER_NAMES = ("ec", "pr", "rp")
-GLOBAL_DESIGNS = ("uniform", "lhs", "sobol", "maximin")
+GLOBAL_DESIGNS = ("uniform", "lhs", "sobol", "maximin", "screening","f_thickness")
 VARIATION_MODES = ("oat", "uniform", "lhs", "sobol", "maximin")
 
 
@@ -386,6 +393,242 @@ def oat_variation_points(
     return unique
 
 
+def screening_unit_candidates() -> np.ndarray:
+    """Return deterministic unit-cube candidates for coarse range screening.
+
+    Priority of the first 27 points:
+
+    1. box center (1 point)
+    2. all low/high corners (8 points)
+    3. face centers (6 points)
+    4. edge centers (12 points)
+
+    The remaining candidates come from a 5-level lattice with normalized levels
+    ``0, 0.25, 0.5, 0.75, 1``.  Exact duplicates are removed while preserving
+    priority.  This makes ``count=15`` a useful default for fast FerroX range
+    checks, while larger counts progressively fill the interior.
+    """
+    candidates: list[tuple[float, float, float]] = []
+
+    # 1) Center.
+    candidates.append((0.5, 0.5, 0.5))
+
+    # 2) 8 corners.
+    for x in (0.0, 1.0):
+        for y in (0.0, 1.0):
+            for z in (0.0, 1.0):
+                candidates.append((x, y, z))
+
+    # 3) 6 face centers: one coordinate at a boundary, the other two centered.
+    for axis in range(3):
+        for boundary in (0.0, 1.0):
+            point = [0.5, 0.5, 0.5]
+            point[axis] = boundary
+            candidates.append(tuple(point))
+
+    # 4) 12 edge centers: two coordinates on boundaries, one centered.
+    for center_axis in range(3):
+        boundary_axes = [axis for axis in range(3) if axis != center_axis]
+        for a in (0.0, 1.0):
+            for b in (0.0, 1.0):
+                point = [0.5, 0.5, 0.5]
+                point[boundary_axes[0]] = a
+                point[boundary_axes[1]] = b
+                candidates.append(tuple(point))
+
+    # 5) Finer 5-level lattice for count > 27 or to replace rejected core points.
+    fine_levels = (0.0, 0.25, 0.5, 0.75, 1.0)
+    for x in fine_levels:
+        for y in fine_levels:
+            for z in fine_levels:
+                candidates.append((x, y, z))
+
+    unique: list[tuple[float, float, float]] = []
+    seen: set[tuple[float, float, float]] = set()
+    for point in candidates:
+        if point in seen:
+            continue
+        seen.add(point)
+        unique.append(point)
+
+    return np.asarray(unique, dtype=float)
+
+
+def screening_epr_points(
+    *,
+    count: int,
+    bounds: EPRBounds,
+    ec_scale: str,
+    pr_scale: str,
+    reference_points: Iterable[Sequence[float]] = (),
+    accept: Callable[[EPRPoint], bool] | None = None,
+) -> list[EPRPoint]:
+    """Generate deterministic coarse screening points for FerroX.
+
+    ``count=15`` gives the recommended core design: center + corners + face
+    centers, subject to ``accept``.  If a core point is rejected by a physical
+    constraint, or if more than 15 points are requested, additional accepted
+    candidates are selected from the 5-level lattice by maximin distance.
+
+    Notes
+    -----
+    The screening design intentionally includes exact lower/upper bounds.  The
+    caller therefore should not use mathematically singular bounds such as
+    ``Pr=0`` when the downstream EPR-to-Landau transform requires ``Pr > 0``.
+    """
+    if count <= 0:
+        raise ValueError("screening requires a positive count")
+
+    unit_candidates = screening_unit_candidates()
+    physical_candidates: list[EPRPoint] = []
+    normalized_candidates: list[np.ndarray] = []
+
+    for unit_point in unit_candidates:
+        point = unit_point_to_epr(
+            unit_point,
+            bounds,
+            ec_scale,
+            pr_scale,
+            design="screening",
+        )
+        if accept is not None and not accept(point):
+            continue
+        physical_candidates.append(point)
+        normalized_candidates.append(np.asarray(unit_point, dtype=float))
+
+    if len(physical_candidates) < count:
+        raise RuntimeError(
+            f"Only {len(physical_candidates)} accepted screening points are available "
+            f"for count={count}. Reduce --count or relax the acceptance constraints."
+        )
+
+    # Keep the accepted high-priority core in its deterministic order.  The first
+    # 15 raw candidates are center + 8 corners + 6 face centers.
+    core_raw = screening_unit_candidates()[:15]
+    core_keys = {tuple(float(v) for v in row) for row in core_raw}
+
+    selected: list[EPRPoint] = []
+    selected_norm: list[np.ndarray] = []
+    used_indices: set[int] = set()
+
+    for index, (point, norm) in enumerate(zip(physical_candidates, normalized_candidates, strict=True)):
+        if tuple(float(v) for v in norm) not in core_keys:
+            continue
+        selected.append(point)
+        selected_norm.append(norm)
+        used_indices.add(index)
+        if len(selected) >= count:
+            return selected
+
+    # Normalize supplied references and use them only to guide the augmentation.
+    references_norm: list[np.ndarray] = []
+    for ref in reference_points:
+        ref_tuple = tuple(float(v) for v in ref)
+        if bounds.contains(ref_tuple, atol=1.0e-12):
+            references_norm.append(normalized_epr(ref_tuple, bounds, ec_scale, pr_scale))
+
+    if selected_norm:
+        references_norm.extend(selected_norm)
+
+    all_norm = np.asarray(normalized_candidates, dtype=float)
+    if references_norm:
+        reference_array = np.asarray(references_norm, dtype=float).reshape(-1, 3)
+        nearest_distance = minimum_squared_distances(all_norm, reference_array)
+    else:
+        # This can occur only if all 15 core points were rejected.  Favor points
+        # farthest from the unit-cube center for the first replacement.
+        center = np.asarray([[0.5, 0.5, 0.5]], dtype=float)
+        nearest_distance = np.sum((all_norm - center) ** 2, axis=1)
+
+    available = np.ones(len(physical_candidates), dtype=bool)
+    for index in used_indices:
+        available[index] = False
+
+    while len(selected) < count and np.any(available):
+        scores = np.where(available, nearest_distance, -np.inf)
+        selected_index = int(np.argmax(scores))
+        available[selected_index] = False
+        selected.append(physical_candidates[selected_index])
+
+        selected_point = all_norm[selected_index]
+        squared_to_selected = np.sum((all_norm - selected_point) ** 2, axis=1)
+        nearest_distance = np.minimum(nearest_distance, squared_to_selected)
+
+    if len(selected) != count:
+        raise RuntimeError(
+            f"Screening selected only {len(selected)} points out of requested {count}"
+        )
+    return selected
+
+
+
+def load_epr_points_from_thickness(
+    *,
+    dataset_path: str | Path = "MFM_dataset.xlsx",
+    source_t_fe: float = 8e-9,
+    sheet_name: str = "experiments",
+    design: str = "thickness_copy",
+    count: int,
+    accept: Callable[[EPRPoint], bool] | None = None,
+) -> list[EPRPoint]:
+    """
+    從 dataset 中讀取指定厚度的 Ec, Pr, rp，
+    經 accept 篩選後最多回傳 count 個 EPRPoint。
+
+    若符合條件的點數少於 count，
+    則回傳所有剩餘點。
+    """
+
+    if count <= 0:
+        raise ValueError("count must be positive")
+
+    experiments = pd.read_excel(
+        dataset_path,
+        sheet_name=sheet_name,
+    )
+
+    mask = np.isclose(
+        experiments["T_FE"].astype(float),
+        source_t_fe,
+        rtol=1e-6,
+        atol=1e-15,
+    )
+
+    selected = (
+        experiments.loc[
+            mask,
+            ["Ec", "Pr", "rp"],
+        ]
+        .dropna()
+        .drop_duplicates()
+    )
+
+    points: list[EPRPoint] = []
+    d_cnt = 0
+
+    for row in selected.itertuples(index=False):
+        point = EPRPoint(
+            Ec=float(row.Ec),
+            Pr=float(row.Pr),
+            rp=float(row.rp),
+            design=design,
+        )
+
+        if accept is not None and not accept(point):
+            d_cnt += 1
+            continue
+
+        points.append(point)
+
+        # 已經取得需要的數量，可以直接停止
+        if len(points) >= count:
+            break
+
+    if d_cnt > 0:
+        print(f"Skipped {d_cnt} points that did not meet the acceptance criteria.")
+
+    return points
+
 def _unit_design(
     design: str,
     n_samples: int,
@@ -415,6 +658,9 @@ def sample_epr_points(
     maximin_pool_size: int | None = None,
     variation: VariationSpec | None = None,
     accept: Callable[[EPRPoint], bool] | None = None,
+    source_t_fe: float = 8e-9,
+    excel_path: str | Path = "MFM_dataset.xlsx",
+    
 ) -> list[EPRPoint]:
     """Generate EPR points for either a global or local/variation design.
 
@@ -462,6 +708,30 @@ def sample_epr_points(
 
     rng = np.random.default_rng(seed)
     references = [tuple(float(v) for v in ref) for ref in reference_points]
+
+    if active_design == "screening":
+        if design == "variation":
+            raise ValueError("screening is a global design and cannot be used as a variation mode")
+        return screening_epr_points(
+            count=count,
+            bounds=active_bounds,
+            ec_scale=ec_scale,
+            pr_scale=pr_scale,
+            reference_points=references,
+            accept=accept,
+        )
+        
+    if active_design == "f_thickness":
+        if design == "variation":
+            raise ValueError("f_thickness is a global design and cannot be used as a variation mode")
+        return load_epr_points_from_thickness(
+            dataset_path=excel_path,
+            source_t_fe=source_t_fe,
+            sheet_name="experiments",
+            design="f_thickness",
+            count=count,
+            accept=accept,
+        )
 
     if active_design in {"uniform", "lhs", "sobol"}:
         accepted_points: list[EPRPoint] = []

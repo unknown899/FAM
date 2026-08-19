@@ -29,6 +29,7 @@ import math
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -442,6 +443,8 @@ def generate_candidates(
     maximin_pool_size: int | None = None,
     max_abs_alpha: float | None = None,
     variation_spec: VariationSpec | None = None,
+    source_t_fe_m: float = 8e-9,
+    excel_path: str | Path = "MFM_dataset.xlsx",
 ) -> list[Candidate]:
     """Generate FerroX-ready candidates via the reusable sampling module.
 
@@ -518,6 +521,8 @@ def generate_candidates(
         maximin_pool_size=maximin_pool_size,
         variation=variation_spec,
         accept=accept_point,
+        source_t_fe=source_t_fe_m,
+        excel_path=excel_path,
     )
 
     candidates = [candidate_cache[point.as_tuple()] for point in sampled_points]
@@ -809,8 +814,13 @@ def append_status_row(
         writer.writerow(row)
 
 
-def execute_notebook(folder: Path, notebook_name: str) -> int:
+def execute_notebook(
+    folder: Path,
+    notebook_name: str,
+    del_after_analyze: int = 0,
+) -> int:
     log_path = folder / "analyze.log"
+
     command = [
         "jupyter",
         "nbconvert",
@@ -821,6 +831,7 @@ def execute_notebook(folder: Path, notebook_name: str) -> int:
         "--ExecutePreprocessor.timeout=-1",
         notebook_name,
     ]
+
     with log_path.open("w", encoding="utf-8") as log_file:
         result = subprocess.run(
             command,
@@ -829,7 +840,65 @@ def execute_notebook(folder: Path, notebook_name: str) -> int:
             stderr=subprocess.STDOUT,
             check=False,
         )
+
+    # notebook 執行完成後刪除 plts/plt* 檔案
+    if del_after_analyze == 1:
+        plts_folder = folder / "plts"
+
+        if plts_folder.is_dir():
+            deleted_count = 0
+
+            for plt_path in plts_folder.glob("plt*"):
+                if plt_path.is_file():
+                    try:
+                        plt_path.unlink()
+                        deleted_count += 1
+                    except OSError as error:
+                        print(
+                            f"[WARNING] 無法刪除 {plt_path}: {error}",
+                            file=sys.stderr,
+                        )
+
+            print(
+                f"[INFO] Deleted {deleted_count} plt files "
+                f"from {plts_folder}"
+            )
+        else:
+            print(
+                f"[WARNING] plts folder not found: {plts_folder}",
+                file=sys.stderr,
+            )
+
     return result.returncode
+
+
+def terminate_process_group(
+    process: subprocess.Popen,
+    *,
+    grace_seconds: float = 5.0,
+) -> int:
+    """Terminate one launched simulation and its child processes.
+
+    Each simulation is started with ``start_new_session=True``, so the Popen PID
+    is also the process-group ID.  SIGTERM is tried first; SIGKILL is used if
+    the group is still alive after ``grace_seconds``.
+    """
+    if process.poll() is not None:
+        return int(process.returncode)
+
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+
+    try:
+        return int(process.wait(timeout=grace_seconds))
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        return int(process.wait())
 
 
 def run_batch(
@@ -843,6 +912,9 @@ def run_batch(
     idle_utilization: int,
     max_parallel: int | None,
     status_csv: Path,
+    enable_case_timeout: bool,
+    case_timeout_seconds: float,
+    del_after_analyze: int = 0
 ) -> None:
     executable = exec_dir / executable_name
     if not executable.is_file():
@@ -858,6 +930,8 @@ def run_batch(
     parallel_limit = hardware_limit if max_parallel is None else min(max_parallel, hardware_limit)
     if parallel_limit <= 0:
         raise ValueError("max_parallel must be positive")
+    if case_timeout_seconds <= 0.0:
+        raise ValueError("case_timeout_seconds must be positive")
 
     pending = deque(prepared_cases)
     running: dict[int, RunningJob] = {}
@@ -870,35 +944,103 @@ def run_batch(
         f"Detected GPUs: {[gpu.index for gpu in initial_gpus]}; "
         f"maximum batch parallelism: {parallel_limit}"
     )
+    if enable_case_timeout:
+        print(
+            f"Per-case timeout enabled: {case_timeout_seconds:g} seconds"
+        )
     render_progress(completed, total, len(running), failures)
 
     try:
         while pending or running:
-            # Collect completed jobs.
+            # Collect completed jobs and stop cases that exceed the optional
+            # per-case wall-clock timeout.
             for gpu_index, job in list(running.items()):
-                return_code = job.process.poll()
-                if return_code is None:
-                    continue
+                now = datetime.now().astimezone()
+                elapsed_running = (now - job.started_at).total_seconds()
+                timed_out = (
+                    enable_case_timeout
+                    and elapsed_running > case_timeout_seconds
+                    and job.process.poll() is None
+                )
 
-                ended_at = datetime.now().astimezone()
-                elapsed = (ended_at - job.started_at).total_seconds()
-                job.log_handle.write(f"\nEXIT_CODE={return_code}\n")
-                job.log_handle.write(ended_at.strftime("%a %b %d %H:%M:%S %Z %Y") + "\n")
+                if timed_out:
+                    print(
+                        f"\nTimeout: {job.folder_name} exceeded "
+                        f"{case_timeout_seconds:g} s; terminating PID "
+                        f"{job.process.pid} and its process group..."
+                    )
+                    return_code = terminate_process_group(job.process)
+                    ended_at = datetime.now().astimezone()
+                    elapsed = (ended_at - job.started_at).total_seconds()
+                    final_status = "simulation_timeout"
+
+                    job.log_handle.write(
+                        f"\nTIMEOUT_SECONDS={case_timeout_seconds:g}\n"
+                        f"TIMEOUT_PID={job.process.pid}\n"
+                        f"EXIT_CODE={return_code}\n"
+                    )
+                else:
+                    return_code = job.process.poll()
+                    if return_code is None:
+                        continue
+
+                    ended_at = now
+                    elapsed = elapsed_running
+                    final_status = (
+                        "simulation_ok"
+                        if return_code == 0
+                        else "simulation_failed"
+                    )
+
+                job.log_handle.write(
+                    ended_at.strftime("%a %b %d %H:%M:%S %Z %Y") + "\n"
+                )
                 job.log_handle.flush()
                 job.log_handle.close()
 
                 run_log = job.folder / "run.log"
-                trim_file_to_last_lines(run_log, max_lines=200)
+                trim_file_to_last_lines(run_log, max_lines=300)
 
-                final_status = "simulation_ok" if return_code == 0 else "simulation_failed"
-                if return_code == 0 and execute_notebook_after:
-                    notebook_return_code = execute_notebook(job.folder, notebook_name)
+                if (
+                    final_status == "simulation_ok"
+                    and execute_notebook_after
+                ):
+                    notebook_return_code = execute_notebook(
+                        job.folder,
+                        notebook_name,
+                        del_after_analyze=del_after_analyze,
+                    )
                     if notebook_return_code != 0:
                         final_status = "analysis_failed"
                         return_code = notebook_return_code
 
                 if final_status != "simulation_ok":
                     failures += 1
+                    plts_folder = job.folder / "plts"
+
+                    if plts_folder.is_dir():
+                        deleted_count = 0
+
+                        for plt_path in plts_folder.glob("plt*"):
+                            if plt_path.is_file():
+                                try:
+                                    plt_path.unlink()
+                                    deleted_count += 1
+                                except OSError as error:
+                                    print(
+                                        f"[WARNING] 無法刪除 {plt_path}: {error}",
+                                        file=sys.stderr,
+                                    )
+
+                        print(
+                            f"[INFO] Deleted {deleted_count} plt files "
+                            f"from {plts_folder}"
+                        )
+                    else:
+                        print(
+                            f"[WARNING] plts folder not found: {plts_folder}",
+                            file=sys.stderr,
+                        )
 
                 append_status_row(
                     status_csv,
@@ -975,6 +1117,7 @@ def run_batch(
                             stderr=subprocess.STDOUT,
                             env=environment,
                             text=True,
+                            start_new_session=True,
                         )
                     except Exception:
                         log_handle.close()
@@ -1011,12 +1154,7 @@ def run_batch(
     except KeyboardInterrupt:
         print("\nInterrupted. Terminating simulations started by this batch...")
         for job in running.values():
-            job.process.terminate()
-        for job in running.values():
-            try:
-                job.process.wait(timeout=20)
-            except subprocess.TimeoutExpired:
-                job.process.kill()
+            terminate_process_group(job.process, grace_seconds=5.0)
             job.log_handle.close()
         raise
 
@@ -1202,6 +1340,17 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=EXAMPLES,
     )
     parser.add_argument(
+        "--del-after-analyze",
+        type=int,
+        choices=(0, 1),
+        default=0,
+        help=(
+            "是否在 analyze notebook 執行完成後，刪除該 case 的 "
+            "plts/ 資料夾中所有以 plt 開頭的檔案："
+            "0=不刪除（預設），1=刪除"
+        ),
+    )
+    parser.add_argument(
         "--exec-dir",
         type=Path,
         default=Path("/home/bowei/FAM/FerroX/Exec"),
@@ -1264,6 +1413,14 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Thickness used for Excel duplicate comparison; inferred from each "
             "template-folder name when omitted."
+        ),
+    )
+    parser.add_argument(
+        "--source-t-fe-nm",
+        type=float,
+        default=None,
+        help=(
+            "source thickness used for f_thickness sampling."
         ),
     )
     parser.add_argument("--seed", type=int, default=20260712, help="Sampling RNG seed.")
@@ -1468,6 +1625,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--poll-seconds", type=float, default=15.0)
     parser.add_argument(
+        "--enable-case-timeout",
+        action="store_true",
+        help=(
+            "Enable a wall-clock timeout for each FerroX simulation. "
+            "Disabled by default."
+        ),
+    )
+    parser.add_argument(
+        "--case-timeout-seconds",
+        type=float,
+        default=3600.0,
+        help=(
+            "Maximum wall-clock runtime in seconds for one FerroX case when "
+            "--enable-case-timeout is set. Default: %(default)s"
+        ),
+    )
+    parser.add_argument(
         "--gpu-idle-memory-mb",
         type=int,
         default=1000,
@@ -1610,6 +1784,11 @@ def main() -> int:
             args.t_fe_nm * 1e-9
             if args.t_fe_nm is not None
             else infer_t_fe_m(template_folder)
+        )
+        source_t_fe_m = (
+            args.source_t_fe_nm * 1e-9
+            if args.source_t_fe_nm is not None
+            else 8e-9
         )
 
         if t_fe_m is None:
@@ -1764,6 +1943,8 @@ def main() -> int:
             maximin_pool_size=args.maximin_pool_size,
             max_abs_alpha=args.max_abs_alpha,
             variation_spec=variation_spec,
+            source_t_fe_m=source_t_fe_m,
+            excel_path=dataset_path,
         )
 
         final_index = (
@@ -1926,6 +2107,9 @@ def main() -> int:
         idle_utilization=args.gpu_idle_utilization,
         max_parallel=args.max_parallel,
         status_csv=status_csv,
+        enable_case_timeout=args.enable_case_timeout,
+        case_timeout_seconds=args.case_timeout_seconds,
+        del_after_analyze=args.del_after_analyze,
     )
 
     return 0

@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""Add intrinsic Landau EPR columns to MFIS_dataset.xlsx.
+"""Add intrinsic Landau EPR columns to a FerroX dataset workbook.
 
-Expected source columns in the ``experiments`` worksheet are ``alpha``,
-``beta`` and ``gamma``. The script adds or updates these columns:
+By default, ``--structure MFIS`` selects ``MFIS_dataset.xlsx``.  Any other
+structure (for example MFIM, MFM, or a custom name) can be selected with
+``--structure`` or an explicit ``--excel`` path.  Worksheet and source/output
+column names are configurable.
+
+The default source columns are ``alpha``, ``beta`` and ``gamma``. The script
+adds or updates these columns:
 
     Ec, Pr, Pc0, rp, landau_consistency_pass
 
@@ -22,7 +27,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from utils.landau_EPR_transformer import check_landau_EPR, landau_to_EPR
+try:
+    from utils.landau_EPR_transformer import check_landau_EPR, landau_to_EPR
+except ModuleNotFoundError as error:
+    check_landau_EPR = None
+    landau_to_EPR = None
+    _TRANSFORM_IMPORT_ERROR = error
+else:
+    _TRANSFORM_IMPORT_ERROR = None
 
 
 OUTPUT_HEADERS = (
@@ -32,6 +44,28 @@ OUTPUT_HEADERS = (
     "rp",
     "landau_consistency_pass",
 )
+
+DEFAULT_STRUCTURE = "MFIS"
+DEFAULT_SHEET_NAME = "experiments"
+
+HELP_EPILOG = r"""
+Examples:
+  # MFIM_dataset.xlsx -> MFIM_dataset_with_EPR.xlsx
+  python add_EPR_to_excel.py --structure MFIM
+
+  # Update MFIM_dataset.xlsx atomically in place
+  python add_EPR_to_excel.py --structure MFIM --in-place
+
+  # Completely custom workbook, worksheet, and column names
+  python add_EPR_to_excel.py \
+      --excel data/custom.xlsx \
+      --sheet runs \
+      --alpha-column landau_a \
+      --beta-column landau_b \
+      --gamma-column landau_c \
+      --ec-column intrinsic_Ec \
+      --in-place
+"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +103,27 @@ def _find_header_column(
     if len(matches) > 1:
         raise KeyError(f"Multiple matching columns for {sorted(aliases)!r}: {matches}")
     return matches[0]
+
+
+def _source_aliases(requested_name: str, symbol: str) -> set[str]:
+    """Keep Greek aliases for the conventional Landau column names."""
+
+    aliases = {requested_name}
+    conventional = {
+        "α": "alpha",
+        "β": "beta",
+        "γ": "gamma",
+    }
+    if _normalize_header(requested_name) in {
+        _normalize_header(symbol),
+        conventional[symbol],
+    }:
+        aliases.update({symbol, conventional[symbol]})
+    return aliases
+
+
+def _resolve_under_root(path: Path, root: Path) -> Path:
+    return path if path.is_absolute() else root / path
 
 
 def _ensure_output_column(
@@ -168,8 +223,23 @@ def add_EPR_to_workbook(
     rtol: float = 1.0e-9,
     atol: float = 0.0,
     overwrite: bool = False,
+    alpha_column: str = "alpha",
+    beta_column: str = "beta",
+    gamma_column: str = "gamma",
+    ec_column: str = "Ec",
+    pr_column: str = "Pr",
+    pc0_column: str = "Pc0",
+    rp_column: str = "rp",
+    consistency_column: str = "landau_consistency_pass",
+    style_source_column: str | None = None,
 ) -> UpdateSummary:
     """Calculate and write EPR quantities for every valid experiments row."""
+
+    if landau_to_EPR is None or check_landau_EPR is None:
+        raise RuntimeError(
+            "Cannot import utils.landau_EPR_transformer. Put this script "
+            "beside the utils/ directory or install that module."
+        ) from _TRANSFORM_IMPORT_ERROR
 
     try:
         from openpyxl import load_workbook
@@ -193,6 +263,8 @@ def add_EPR_to_workbook(
         )
     else:
         destination = Path(output_path).expanduser().resolve()
+    if destination.suffix.casefold() not in {".xlsx", ".xlsm"}:
+        raise ValueError("Output must use the .xlsx or .xlsm extension")
 
     same_file = destination == source
     if destination.exists() and not (overwrite or same_file):
@@ -223,21 +295,67 @@ def add_EPR_to_workbook(
 
         worksheet = workbook[sheet_name]
         value_worksheet = value_workbook[sheet_name]
-        alpha_col = _find_header_column(worksheet, header_row, {"alpha", "α"})
-        beta_col = _find_header_column(worksheet, header_row, {"beta", "β"})
-        gamma_col = _find_header_column(worksheet, header_row, {"gamma", "γ"})
+        alpha_col = _find_header_column(
+            worksheet,
+            header_row,
+            _source_aliases(alpha_column, "α"),
+        )
+        beta_col = _find_header_column(
+            worksheet,
+            header_row,
+            _source_aliases(beta_column, "β"),
+        )
+        gamma_col = _find_header_column(
+            worksheet,
+            header_row,
+            _source_aliases(gamma_column, "γ"),
+        )
+        style_col = (
+            gamma_col
+            if style_source_column is None
+            else _find_header_column(
+                worksheet,
+                header_row,
+                {style_source_column},
+            )
+        )
+
+        output_names = {
+            "Ec": ec_column,
+            "Pr": pr_column,
+            "Pc0": pc0_column,
+            "rp": rp_column,
+            "landau_consistency_pass": consistency_column,
+        }
+        normalized_output_names = [
+            _normalize_header(name) for name in output_names.values()
+        ]
+        if any(not name for name in normalized_output_names):
+            raise ValueError("Output column names cannot be empty")
+        if len(set(normalized_output_names)) != len(normalized_output_names):
+            raise ValueError("Output column names must be unique")
+        source_columns = {alpha_col, beta_col, gamma_col}
+        for logical_name, output_name in output_names.items():
+            for source_column in source_columns:
+                if _normalize_header(
+                    worksheet.cell(header_row, source_column).value
+                ) == _normalize_header(output_name):
+                    raise ValueError(
+                        f"Output column {logical_name}={output_name!r} collides "
+                        "with a Landau source column"
+                    )
 
         old_max_column = worksheet.max_column
         output_columns: dict[str, int] = {}
         new_columns: set[int] = set()
-        for header in OUTPUT_HEADERS:
+        for logical_name in OUTPUT_HEADERS:
             column, is_new = _ensure_output_column(
                 worksheet,
                 header_row,
-                header,
-                gamma_col,
+                output_names[logical_name],
+                style_col,
             )
-            output_columns[header] = column
+            output_columns[logical_name] = column
             if is_new:
                 new_columns.add(column)
 
@@ -284,14 +402,14 @@ def add_EPR_to_workbook(
 
             for column in new_columns:
                 _copy_style(
-                    worksheet.cell(row, gamma_col),
+                    worksheet.cell(row, style_col),
                     worksheet.cell(row, column),
                 )
 
             try:
-                alpha = _to_float(raw[0], "alpha")
-                beta = _to_float(raw[1], "beta")
-                gamma = _to_float(raw[2], "gamma")
+                alpha = _to_float(raw[0], alpha_column)
+                beta = _to_float(raw[1], beta_column)
+                gamma = _to_float(raw[2], gamma_column)
                 epr = landau_to_EPR(alpha, beta, gamma)
                 check = check_landau_EPR(
                     alpha,
@@ -360,11 +478,38 @@ def add_EPR_to_workbook(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Add Ec, Pr, Pc0, rp and a Landau consistency flag to Excel."
+        description=(
+            "Add Ec, Pr, Pc0, rp and a Landau consistency flag to any "
+            "FerroX dataset workbook."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=HELP_EPILOG,
     )
-    parser.add_argument("--input", default="MFIS_dataset.xlsx")
+    parser.add_argument(
+        "--structure",
+        default=DEFAULT_STRUCTURE,
+        help=(
+            "Structure label used only when --excel is omitted; selects "
+            "<structure>_dataset.xlsx (default: MFIS)."
+        ),
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=Path.cwd(),
+        help="Base directory for relative paths (default: cwd).",
+    )
+    parser.add_argument(
+        "--input",
+        "--excel",
+        dest="input",
+        type=Path,
+        default=None,
+        help="Input workbook; default: <structure>_dataset.xlsx under --root.",
+    )
     parser.add_argument(
         "--output",
+        type=Path,
         help="Default: <input_stem>_with_EPR.xlsx",
     )
     parser.add_argument(
@@ -373,8 +518,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Atomically replace the input workbook.",
     )
     parser.add_argument("--overwrite", action="store_true")
-    parser.add_argument("--sheet", default="experiments")
+    parser.add_argument("--sheet", default=DEFAULT_SHEET_NAME)
     parser.add_argument("--header-row", type=int, default=1)
+    parser.add_argument("--alpha-column", default="alpha")
+    parser.add_argument("--beta-column", default="beta")
+    parser.add_argument("--gamma-column", default="gamma")
+    parser.add_argument("--ec-column", default="Ec")
+    parser.add_argument("--pr-column", default="Pr")
+    parser.add_argument("--pc0-column", default="Pc0")
+    parser.add_argument("--rp-column", default="rp")
+    parser.add_argument(
+        "--consistency-column",
+        default="landau_consistency_pass",
+    )
+    parser.add_argument(
+        "--style-source-column",
+        default=None,
+        help="Column whose formatting is copied to new columns; default: gamma column.",
+    )
     parser.add_argument("--rtol", type=float, default=1.0e-9)
     parser.add_argument("--atol", type=float, default=0.0)
     return parser
@@ -385,17 +546,44 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.in_place and args.output:
         parser.error("--in-place and --output cannot be used together")
+    if not args.structure.strip():
+        parser.error("--structure cannot be empty")
 
-    output = args.input if args.in_place else args.output
+    root = args.root.expanduser().resolve()
+    if not root.is_dir():
+        parser.error(f"--root is not a directory: {root}")
+
+    input_argument = (
+        args.input
+        if args.input is not None
+        else Path(f"{args.structure}_dataset.xlsx")
+    )
+    input_path = _resolve_under_root(input_argument.expanduser(), root).resolve()
+    output_path = (
+        None
+        if args.output is None
+        else _resolve_under_root(args.output.expanduser(), root).resolve()
+    )
+
+    output = input_path if args.in_place else output_path
     try:
         summary = add_EPR_to_workbook(
-            args.input,
+            input_path,
             output,
             sheet_name=args.sheet,
             header_row=args.header_row,
             rtol=args.rtol,
             atol=args.atol,
             overwrite=args.overwrite,
+            alpha_column=args.alpha_column,
+            beta_column=args.beta_column,
+            gamma_column=args.gamma_column,
+            ec_column=args.ec_column,
+            pr_column=args.pr_column,
+            pc0_column=args.pc0_column,
+            rp_column=args.rp_column,
+            consistency_column=args.consistency_column,
+            style_source_column=args.style_source_column,
         )
     except Exception as error:
         print(f"ERROR: {error}", file=sys.stderr)
